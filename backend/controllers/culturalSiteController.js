@@ -12,174 +12,6 @@ const { queryOverpass } = require('../services/overpassService')
 const { processOsmElementForCulturalSite } = require('../utils/osmDataProcessor');
 const { CULTURAL_SITE_UPDATABLE_FIELDS, CULTURAL_CATEGORY } = require('../config/culturalSiteConfig');
 
-// const getAllCulturalSites = asyncHandler(async (req, res, next) => {
-//     // 1. 애그리게이션 파이프라인 초기화
-//     let pipeline = [];
-
-//     // 2. 텍스트 검색 ($match)
-//     if (req.query.q) {
-//         const searchTerm = req.query.q;
-//         pipeline.push({
-//             $match: {
-//                 $or: [
-//                     { name: { $regex: searchTerm, $options: 'i' } },
-//                     { description: { $regex: searchTerm, $options: 'i' } },
-//                     { address: { $regex: searchTerm, $options: 'i' } }
-//                 ]
-//             }
-//         });
-//     }
-
-//     // 3. 카테고리 필터링 ($match)
-//     if (req.query.category) {
-//         const categories = req.query.category.split(',').map(cat => cat.trim());
-//         pipeline.push({
-//             $match: {
-//                 category: { $in: categories }
-//             }
-//         });
-//     }
-
-//     // 4.1. 원형(반경) 위치 기반 검색 ($geoWithin with $centerSphere)
-//     if (req.query.distance && req.query.lat && req.query.lng) {
-//         const { distance, lat, lng } = req.query;
-//         if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng)) || isNaN(parseFloat(distance))) {
-//             return next(new AppError('위치 기반 검색을 위한 lat, lng, distance 파라미터가 유효하지 않습니다.', 400));
-//         }
-
-//         const radiusInRadians = parseFloat(distance) / 6378137;
-//         pipeline.push({
-//             $match: {
-//                 location: {
-//                     $geoWithin: {
-//                         $centerSphere: [
-//                             [parseFloat(lng), parseFloat(lat)], // MongoDB는 [경도, 위도] 순서
-//                             radiusInRadians
-//                         ]
-//                     }
-//                 }
-//             }
-//         });
-//     }
-
-//     // 4.2. 뷰포트(직사각형) 위치 기반 검색 ($geoWithin with $box)
-//     if (req.query.bounds) {
-//         const bounds = req.query.bounds.split(',').map(coord => parseFloat(coord.trim()));
-//         if (bounds.length === 4 && bounds.every(coord => !isNaN(coord))) {
-//             const [swLng, swLat, neLng, neLat] = bounds;
-
-//             pipeline.push({
-//                 $match: {
-//                     location: {
-//                         $geoWithin: {
-//                             $box: [
-//                                 [swLng, swLat],
-//                                 [neLng, neLat]
-//                             ]
-//                         }
-//                     }
-//                 }
-//             });
-//         } else {
-//             return next(new AppError('유효하지 않은 bounds 파라미터입니다. southwestLng,southwestLat,northeastLng,northeastLat 형식이어야 합니다.', 400));
-//         }
-//     }
-
-//     // --- 애그리게이션 파이프라인에서 추가 필드 계산 (평점, 리뷰 개수) ---
-//     // 5. 리뷰 데이터를 조인하여 평균 평점 및 리뷰 개수 계산
-//     pipeline.push(
-//         {
-//             $lookup: {
-//                 from: 'reviews', // Review 모델의 컬렉션 이름 (소문자, 복수형)
-//                 localField: 'reviews', // CulturalSite의 reviews 필드
-//                 foreignField: '_id', // Review의 _id 필드
-//                 as: 'reviewsData' // 조인된 리뷰 데이터가 저장될 필드 이름
-//             }
-//         },
-//         {
-//             $addFields: {
-//                 averageRating: { $ifNull: [{ $avg: '$reviewsData.rating' }, 0] },
-//                 reviewCount: { $size: '$reviewsData' } // 리뷰 개수 계산
-//             }
-//         }
-//     );
-
-//     // 6. 정렬 기능 추가 (평점순, 즐겨찾기순, 리뷰 개수순)
-//     // http://localhost:5000/api/v1/cultural-sites?sort=averageRating,-favoritesCount,reviewCount
-//     let sortStage = {};
-//     if (req.query.sort) {
-//         const sortByFields = req.query.sort.split(','); // 콤마로 분리
-//         sortByFields.forEach(field => {
-//             field = field.trim();
-//             if (field.startsWith('-')) {
-//                 sortStage[field.substring(1)] = -1; // 내림차순
-//             } else {
-//                 sortStage[field] = 1; // 오름차순
-//             }
-//         });
-//     } else {
-//         // 기본 정렬: 최신순
-//         sortStage = { createdAt: -1 };
-//     }
-//     pipeline.push({ $sort: sortStage });
-
-//     // 7. 페이지네이션 (총 개수를 위해 미리 계산)
-//     // 애그리게이션 파이프라인에서 총 개수와 실제 데이터를 함께 가져오는 패턴 (Recommended!)
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 10;
-//     const skip = (page - 1) * limit;
-
-//     const totalResultsPipeline = [...pipeline]; // 현재까지의 필터링 파이프라인 복사
-//     totalResultsPipeline.push({ $count: 'total' }); // 총 개수만 세는 스테이지 추가
-
-//     let totalResultDoc = await CulturalSite.aggregate(totalResultsPipeline);
-//     const totalResults = totalResultDoc.length > 0 ? totalResultDoc[0].total : 0;
-//     const totalPages = Math.ceil(totalResults / limit);
-
-//     // 실제 데이터 가져오기 위한 페이지네이션 스테이지 추가
-//     pipeline.push(
-//         { $skip: skip },
-//         { $limit: limit }
-//     );
-
-//     // 8. 최종 필드 선택 ($project) - 필요한 필드만 포함
-//     pipeline.push({
-//         $project: {
-//             name: 1,
-//             description: 1,
-//             category: 1,
-//             location: 1,
-//             address: 1,
-//             website: 1,
-//             imageUrl: 1,
-//             openingHours: 1,
-//             licenseInfo: 1,
-//             sourceId: 1,
-//             favoritesCount: 1,
-//             proposedBy: 1,
-//             registeredBy: 1,
-//             createdAt: 1,
-//             updatedAt: 1,
-//             averageRating: 1, // 계산된 평균 평점 포함
-//             reviewCount: 1 // 계산된 리뷰 개수 포함
-//         }
-//     });
-
-//     const culturalSites = await CulturalSite.aggregate(pipeline);
-
-//     res.status(200).json({
-//         status: 'success',
-//         results: culturalSites.length, // 현재 페이지의 문서 개수
-//         totalResults: totalResults, // 전체 검색 조건에 맞는 문서 개수
-//         page: page,
-//         totalPages: totalPages,
-//         limit: limit,
-//         data: {
-//             culturalSites: culturalSites
-//         }
-//     });
-// });
-
 const getAllCulturalSites = asyncHandler(async (req, res, next) => {
     // 1. 애그리게이션 파이프라인 초기화
     let pipeline = [];
@@ -209,15 +41,13 @@ const getAllCulturalSites = asyncHandler(async (req, res, next) => {
     }
 
     // 4.1. 원형(반경) 위치 기반 검색 ($geoWithin with $centerSphere)
-    // 이 부분은 뷰포트 기반 검색과 함께 사용될 경우 로직 충돌이 발생할 수 있으므로,
-    // 둘 중 하나만 적용되도록 조건문을 고려하거나, 뷰포트 검색을 우선하도록 합니다.
-    if (req.query.distance && req.query.lat && req.query.lng && !req.query.bounds) { // bounds가 없을 때만 실행
+    if (req.query.distance && req.query.lat && req.query.lng) {
         const { distance, lat, lng } = req.query;
         if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng)) || isNaN(parseFloat(distance))) {
             return next(new AppError('위치 기반 검색을 위한 lat, lng, distance 파라미터가 유효하지 않습니다.', 400));
         }
 
-        const radiusInRadians = parseFloat(distance) / 6378137; // 지구 반지름(미터) 기준
+        const radiusInRadians = parseFloat(distance) / 6378137;
         pipeline.push({
             $match: {
                 location: {
@@ -232,9 +62,8 @@ const getAllCulturalSites = asyncHandler(async (req, res, next) => {
         });
     }
 
-    // 4.2. 뷰포트(직사각형) 위치 기반 검색 ($geoWithin with $box) - 이 부분을 더 강화합니다.
+    // 4.2. 뷰포트(직사각형) 위치 기반 검색 ($geoWithin with $box)
     if (req.query.bounds) {
-        // bounds 형식: southWestLng,southWestLat,northEastLng,northEastLat
         const bounds = req.query.bounds.split(',').map(coord => parseFloat(coord.trim()));
         if (bounds.length === 4 && bounds.every(coord => !isNaN(coord))) {
             const [swLng, swLat, neLng, neLat] = bounds;
@@ -244,8 +73,8 @@ const getAllCulturalSites = asyncHandler(async (req, res, next) => {
                     location: {
                         $geoWithin: {
                             $box: [
-                                [swLng, swLat], // 사각형의 남서쪽 (경도, 위도)
-                                [neLng, neLat]  // 사각형의 북동쪽 (경도, 위도)
+                                [swLng, swLat],
+                                [neLng, neLat]
                             ]
                         }
                     }
@@ -296,8 +125,9 @@ const getAllCulturalSites = asyncHandler(async (req, res, next) => {
 
     // 7. 페이지네이션 (총 개수를 위해 미리 계산)
     // 애그리게이션 파이프라인에서 총 개수와 실제 데이터를 함께 가져오는 패턴 (Recommended!)
+    // 현재는 임시로 limit을 1000개로 설정함. 이를 초과하면 뷰포트 기반 랜더링 등이 필요함.
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 1000;
     const skip = (page - 1) * limit;
 
     const totalResultsPipeline = [...pipeline]; // 현재까지의 필터링 파이프라인 복사
@@ -350,8 +180,6 @@ const getAllCulturalSites = asyncHandler(async (req, res, next) => {
         }
     });
 });
-
-
 
 const getCulturalSiteById = asyncHandler(async (req, res, next) => {
     const siteId = req.params.id;
