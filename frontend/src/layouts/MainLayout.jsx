@@ -14,7 +14,7 @@ const MainLayout = () => {
     <div className="flex flex-col h-screen">
       <Header currentUser={""} onLogout={""} />
       <AccountManager/>
-      {location.pathname === '/' && <FilterPanel />}
+      {/* {location.pathname === '/' && <FilterPanel />} */}
       <main className="grow relative">
         <Outlet />
       </main>

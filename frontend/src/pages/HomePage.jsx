@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import MapComponent from "../components/MapComponent.jsx";
 import SidePanel from "../components/SidePanel/SidePanel.jsx";
+import FilterPanel from "../components/FilterPanel.jsx"; // FilterPanel 임포트
 
 const HomePage = () => {
   const [culturalSites, setCulturalSites] = useState([]);
@@ -28,33 +29,19 @@ const HomePage = () => {
   if (error) return <div className="flex justify-center items-center h-screen text-xl text-red-600">오류: {error}</div>;
 
   return (
+    // <div className="relative flex h-screen w-screen"> {/* relative 추가 */}
     <>
       <MapComponent
-        culturalSites={culturalSites} // 여전히 모든 원본 데이터는 MapComponent에 전달
-        // selectedCategories는 이제 MapComponent 내부에서 Zustand 스토어로부터 직접 가져옴
+        culturalSites={culturalSites}
       />
-      <SidePanel
-        // selectedCategories와 onCategoryChange prop은 더 이상 필요 없음
-        // SidePanel 내부의 FilterPanel이 직접 Zustand 스토어에 접근함
-      />
-    </>
+      {/* FilterPanel을 지도 위에 오버레이 */}
+      <div className="absolute top-4 left-4 z-20"> {/* 지도 상단 좌측에 위치 (z-index 조정) */}
+        <FilterPanel />
+      </div>
+      <SidePanel />
+      </>
+    // </div>
   );
 }
 
 export default HomePage;
-
-
-
-// import MapComponent from "../components/MapComponent.jsx";
-// import SidePanel from "../components/SidePanel/SidePanel.jsx";
-
-// const HomePage = () => {
-//   return (
-//     <>
-//       <MapComponent />
-//       <SidePanel />
-//     </>
-//   );
-// }
-
-// export default HomePage;

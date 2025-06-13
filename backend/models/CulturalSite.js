@@ -42,7 +42,8 @@ const culturalSiteSchema = new mongoose.Schema({
     },
     address: {
         type: String,
-        trim: true
+        trim: true,
+        required: true
     },
     website: {
         type: String,

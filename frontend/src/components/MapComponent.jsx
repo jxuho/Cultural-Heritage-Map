@@ -76,12 +76,13 @@ function MapComponent({ culturalSites }) { // culturalSites를 props로 받도�
         whenCreated={(mapInstance) => {
           mapRef.current = mapInstance;
         }}
+        zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <ZoomControl position="bottomright" /> {/* 줌 컨트롤 위치 조정 */}
+        <ZoomControl position="bottomleft" /> {/* 줌 컨트롤 위치 조정 */}
         {/* --- MarkerClusterGroup 추가 --- */}
         <MarkerClusterGroup
           chunkedLoading // 대량의 마커를 효율적으로 로드 (선택 사항이지만 권장)
