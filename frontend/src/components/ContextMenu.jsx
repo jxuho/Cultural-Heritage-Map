@@ -36,7 +36,7 @@ export const MenuItem = ({ children, disabled, ...props }) => {
     </button>
   );
 };
-MenuItem.displayName = "MenuItem";
+
 
 // MenuSeparator
 export const MenuSeparator = (props) => {
@@ -47,7 +47,7 @@ export const MenuSeparator = (props) => {
     />
   );
 };
-MenuSeparator.displayName = "MenuSeparator";
+
 
 // Menu
 export const Menu = ({ children }) => {
@@ -139,7 +139,7 @@ export const Menu = ({ children }) => {
           initialFocus={() => listItemsRef.current[0] ?? refs.floating.current}
         >
           <div
-            className="min-w-[250px] max-w-[290px] rounded bg-white flex flex-col overflow-hidden py-1.5 z-50 shadow-menu"
+            className="rounded bg-white flex flex-col overflow-hidden z-50 shadow-menu"
             ref={refs.setFloating}
             style={floatingStyles}
             {...getFloatingProps({
@@ -172,4 +172,3 @@ export const Menu = ({ children }) => {
     </FloatingPortal>
   );
 };
-Menu.displayName = "Menu";
