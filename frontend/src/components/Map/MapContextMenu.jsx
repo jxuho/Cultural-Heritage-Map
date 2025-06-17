@@ -14,7 +14,7 @@ const MapContextMenu = () => {
     (state) => state.setNearbySitesLoading
   ); // nearbySites 로딩 상태 설정 함수
   const setNearbySitesError = useUiStore((state) => state.setNearbySitesError); // nearbySites 에러 상태 설정 함수
-  const role = useAuthStore((state) => state.user.role);
+  const role = useAuthStore((state) => state.user?.role);
 
   const {
     data: nearbyOsmData,
