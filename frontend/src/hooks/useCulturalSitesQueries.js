@@ -12,7 +12,8 @@ import {
   deleteFavorite,
   getMyReviews,
   getNearbyOsm,
-  submitProposal
+  submitProposal,
+  createCulturalSite
 } from '../api/culturalSitesApi'; // API 함수 임포트
 
 // 모든 문화재 목록 가져오기
@@ -174,6 +175,25 @@ export const useSubmitProposal = () => {
       console.error("Error submitting proposal:", error);
       // You can add more sophisticated error handling here, e.g., display a toast notification
       throw error; // Re-throw to be caught by the component
+    },
+  });
+};
+
+
+// 새로운 문화 유적지 생성을 위한 뮤테이션 훅 (관리자용)
+export const useCreateCulturalSite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createCulturalSite,
+    onSuccess: () => {
+      // 성공 시 관련 쿼리 무효화 (예: 지도 데이터 다시 로드)
+      queryClient.invalidateQueries({ queryKey: ['culturalSites'] });
+      // 필요한 경우 다른 쿼리도 무효화할 수 있습니다.
+    },
+    onError: (error) => {
+      console.error("문화 유적지 직접 생성 실패:", error);
+      // 에러 처리 로직 (예: 에러 메시지 표시)
+      throw error; // 에러를 다시 던져서 컴포넌트에서 catch할 수 있도록 합니다.
     },
   });
 };
