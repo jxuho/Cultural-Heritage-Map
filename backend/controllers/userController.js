@@ -299,27 +299,105 @@ const removeFavoriteSite = asyncHandler(async (req, res, next) => {
     }
 });
 
-// 즐겨찾기 조회
+// // 즐겨찾기 조회
+// const getFavoriteSites = asyncHandler(async (req, res, next) => {
+//     // 사용자의 favoriteSites 필드를 populate하여 문화유적지 정보를 가져옵니다.
+//     const user = await User.findById(req.user.id).populate({
+//         path: 'favoriteSites',
+//         select: 'name category address images' // 필요한 필드만 선택
+//     });
+
+//     if (!user) {
+//         return next(new AppError('사용자를 찾을 수 없습니다.', 404));
+//     }
+
+//     res.status(200).json({
+//         status: 'success',
+//         results: user.favoriteSites.length,
+//         data: {
+//             favoriteSites: user.favoriteSites
+//         }
+//     });
+// });
+
 const getFavoriteSites = asyncHandler(async (req, res, next) => {
-    // 사용자의 favoriteSites 필드를 populate하여 문화유적지 정보를 가져옵니다.
-    const user = await User.findById(req.user.id).populate({
-        path: 'favoriteSites',
-        select: 'name category address images' // 필요한 필드만 선택
-    });
+    // 1. 현재 로그인한 사용자의 ID를 가져옵니다. (req.user.id는 인증 미들웨어를 통해 설정된다고 가정)
+    const userId = req.user.id;
+
+    // 2. 사용자 문서를 찾아서 favoriteSites 필드에서 문화유적지 ID 배열을 가져옵니다.
+    const user = await User.findById(userId).select('favoriteSites');
 
     if (!user) {
         return next(new AppError('사용자를 찾을 수 없습니다.', 404));
     }
 
+    // 사용자의 즐겨찾기 ID 목록
+    const favoriteSiteIds = user.favoriteSites;
+
+    // 3. CulturalSite 컬렉션에서 즐겨찾기 ID에 해당하는 문화유적지를 찾고,
+    //    각 문화유적지의 averageRating과 reviewCount를 계산하기 위한 애그리게이션 파이프라인을 생성합니다.
+    const pipeline = [];
+
+    // 3.1. $match: 사용자의 favoriteSites 배열에 있는 ID와 일치하는 문화유적지만 선택
+    pipeline.push({
+        $match: {
+            _id: { $in: favoriteSiteIds }
+        }
+    });
+
+    // 3.2. $lookup: 리뷰 컬렉션과 조인하여 각 문화유적지의 리뷰 데이터를 가져옵니다.
+    pipeline.push({
+        $lookup: {
+            from: 'reviews', // Review 모델의 컬렉션 이름 (MongoDB에서는 일반적으로 소문자, 복수형)
+            localField: 'reviews', // CulturalSite 모델의 reviews 필드 (리뷰 ObjectId 배열)
+            foreignField: '_id', // Review 모델의 _id 필드
+            as: 'reviewsData' // 조인된 리뷰 데이터가 저장될 임시 필드 이름
+        }
+    });
+
+    // 3.3. $addFields: averageRating과 reviewCount를 계산하여 새로운 필드로 추가합니다.
+    pipeline.push({
+        $addFields: {
+            averageRating: { $ifNull: [{ $avg: '$reviewsData.rating' }, 0] }, // reviewsData의 rating 필드 평균 계산, 없으면 0
+            reviewCount: { $size: '$reviewsData' } // reviewsData 배열의 크기 (리뷰 개수) 계산
+        }
+    });
+
+    // 3.4. $project: 최종 응답에 포함될 필드를 선택합니다.
+    // getAllCulturalSites에서 사용된 필드와 유사하게 필요한 모든 필드를 포함시킵니다.
+    pipeline.push({
+        $project: {
+            name: 1,
+            description: 1,
+            category: 1,
+            location: 1, // 지리 정보
+            address: 1,
+            website: 1,
+            imageUrl: 1, // 이미지 URL
+            openingHours: 1,
+            licenseInfo: 1,
+            sourceId: 1,
+            favoritesCount: 1, // 즐겨찾기 수는 CulturalSite 모델에 있다면 포함
+            proposedBy: 1,
+            registeredBy: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            averageRating: 1, // 새로 계산된 평균 평점
+            reviewCount: 1 // 새로 계산된 리뷰 개수
+        }
+    });
+
+    // 4. 애그리게이션 파이프라인 실행
+    const favoriteSitesWithRatings = await CulturalSite.aggregate(pipeline);
+
     res.status(200).json({
         status: 'success',
-        results: user.favoriteSites.length,
+        results: favoriteSitesWithRatings.length,
         data: {
-            favoriteSites: user.favoriteSites
+            favoriteSites: favoriteSitesWithRatings
         }
     });
 });
-
 
 
 const getMyReviews = asyncHandler(async (req, res, next) => {
