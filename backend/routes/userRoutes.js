@@ -37,4 +37,7 @@ router.post('/me/favorites/:siteId', userController.addFavoriteSite);
 // /api/v1/users/me/favorites/:siteId
 router.delete('/me/favorites/:siteId', userController.removeFavoriteSite);
 
+router.get('/me/reviews', userController.getMyReviews);
+
+
 module.exports = router;

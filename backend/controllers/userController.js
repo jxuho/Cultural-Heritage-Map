@@ -321,6 +321,53 @@ const getFavoriteSites = asyncHandler(async (req, res, next) => {
 });
 
 
+
+const getMyReviews = asyncHandler(async (req, res, next) => {
+  // 현재 로그인한 사용자 ID를 기준으로 리뷰를 찾습니다.
+  // req.user는 protect 미들웨어에서 설정된 사용자 정보입니다.
+  if (!req.user || !req.user.id) {
+    return next(new AppError('로그인된 사용자 정보가 없습니다.', 401));
+  }
+
+  const queryObj = { user: req.user.id };
+
+  // APIFeatures를 사용하여 쿼리 파라미터(정렬 등)를 적용합니다.
+  let query = Review.find(queryObj);
+
+  // 리뷰에 연결된 culturalSite와 user 정보도 populate합니다.
+  query = query.populate({
+    path: 'culturalSite',
+    select: 'name imageUrl address' // 필요한 필드만 선택
+  }).populate({
+    path: 'user',
+    select: 'username profileImage' // 필요한 필드만 선택
+  });
+
+  // 정렬 로직 (클라이언트에서 reviewSort 쿼리 파라미터로 받음)
+  if (req.query.reviewSort === 'newest') {
+    query = query.sort('-createdAt');
+  } else if (req.query.reviewSort === 'highestRating') {
+    query = query.sort('-rating');
+  } else if (req.query.reviewSort === 'lowestRating') {
+    query = query.sort('rating');
+  } else {
+    // 기본 정렬: 최신순
+    query = query.sort('-createdAt');
+  }
+
+  const reviews = await query;
+
+  res.status(200).json({
+    status: 'success',
+    results: reviews.length,
+    data: {
+      reviews,
+    },
+  });
+});
+
+
+
 module.exports = {
     getMe,
     updateMe,
@@ -328,4 +375,5 @@ module.exports = {
     addFavoriteSite,
     removeFavoriteSite,
     getFavoriteSites,
+    getMyReviews
 }
