@@ -2,7 +2,7 @@
 import useUiStore from "../../store/uiStore";
 
 const NearbySitesList = ({ sites, onClose }) => {
-  const openProposalForm = useUiStore((state) => state.openProposalForm);
+  const openCreateForm = useUiStore((state) => state.openCreateForm);
 
   if (!sites || sites.length === 0) {
     return (
@@ -25,7 +25,7 @@ const NearbySitesList = ({ sites, onClose }) => {
   }
 
   const handleSiteClick = (site) => {
-    openProposalForm(site);
+    openCreateForm(site);
   };
 
   return (

@@ -1,5 +1,5 @@
 // src/components/SidePanel/ProposalForm.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import useUiStore from "../../store/uiStore";
 // useAuthStore를 임포트하여 사용자의 역할을 가져옵니다.
 import useAuthStore from "../../store/authStore";
@@ -8,8 +8,8 @@ import {
   useCreateCulturalSite,
 } from "../../hooks/useCulturalSitesQueries";
 
-const ProposalForm = () => {
-  const { proposalFormData, closeProposalForm, closeSidePanel } = useUiStore();
+const CreateForm = () => {
+  const { createFormData, closeCreateForm, closeSidePanel } = useUiStore();
   const { user } = useAuthStore(); // 사용자 정보 가져오기
   const role = user?.role; // 사용자의 역할 추출
 
@@ -34,25 +34,25 @@ const ProposalForm = () => {
   const [submissionError, setSubmissionError] = useState(null); // 서버 응답 에러 메시지
 
   useEffect(() => {
-    if (proposalFormData) {
+    if (createFormData) {
       setFormData({
-        name: proposalFormData.name || "",
-        description: proposalFormData.description || "",
-        category: proposalFormData.category || "",
-        imageUrl: proposalFormData.imageUrl || "",
-        openingHours: proposalFormData.openingHours || "",
-        address: proposalFormData.address || "",
-        website: proposalFormData.website || "",
+        name: createFormData.name || "",
+        description: createFormData.description || "",
+        category: createFormData.category || "",
+        imageUrl: createFormData.imageUrl || "",
+        openingHours: createFormData.openingHours || "",
+        address: createFormData.address || "",
+        website: createFormData.website || "",
         proposalMessage: "", // Always start empty for the user to fill
-        location: proposalFormData.location,
-        licenseInfo: proposalFormData.licenseInfo || "",
-        sourceId: proposalFormData.sourceId || "",
-        originalTags: proposalFormData.originalTags || {},
+        location: createFormData.location,
+        licenseInfo: createFormData.licenseInfo || "",
+        sourceId: createFormData.sourceId || "",
+        originalTags: createFormData.originalTags || {},
       });
       setFormErrors({});
       setSubmissionError(null);
     }
-  }, [proposalFormData]);
+  }, [createFormData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -123,7 +123,7 @@ const ProposalForm = () => {
         await submitProposalMutation.mutateAsync(proposalBody);
         alert("Proposal submitted successfully!");
       }
-      closeProposalForm();
+      closeCreateForm();
       closeSidePanel();
     } catch (error) {
       const errorMessage =
@@ -147,7 +147,7 @@ const ProposalForm = () => {
           <button
             className="text-gray-500 hover:text-gray-700 text-4xl font-bold hover:cursor-pointer p-1"
             onClick={() => {
-              closeProposalForm();
+              closeCreateForm();
               closeSidePanel();
             }}
             aria-label="Close proposal form"
@@ -161,7 +161,7 @@ const ProposalForm = () => {
     );
   }
 
-  if (!proposalFormData) {
+  if (!createFormData) {
     return (
       <div className="p-4 text-gray-600 text-center">
         Loading cultural site information to propose...
@@ -170,11 +170,15 @@ const ProposalForm = () => {
   }
 
   const categories = [
-    "museum",
+    "artwork",
     "gallery",
-    "memorial",
-    "historic_site",
-    "park",
+    "museum",
+    "restaurant",
+    "theatre",
+    "arts_centre",
+    "community_centre",
+    "library",
+    "cinema",
     "other",
   ];
 
@@ -184,7 +188,7 @@ const ProposalForm = () => {
         <button
           className="text-gray-500 hover:text-gray-700 text-4xl font-bold hover:cursor-pointer p-1"
           onClick={() => {
-            closeProposalForm();
+            closeCreateForm();
             closeSidePanel();
           }}
           aria-label="Close proposal form"
@@ -440,4 +444,4 @@ const ProposalForm = () => {
   );
 };
 
-export default ProposalForm;
+export default CreateForm;
