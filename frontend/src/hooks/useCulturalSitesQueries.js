@@ -18,7 +18,8 @@ import {
   updateCulturalSite,
   fetchAllProposals,
   acceptProposal,
-  rejectProposal
+  rejectProposal,
+  deleteMyAccount
 } from '../api/culturalSitesApi'; // API 함수 임포트
 
 // 모든 문화재 목록 가져오기
@@ -288,4 +289,32 @@ export const useProposalModeration = () => {
             alert(`제안 ${variables.actionType === 'accept' ? '승인' : '거절'} 실패: ${error.message || "알 수 없는 오류"}`);
         },
     });
+};
+
+
+export const useDeleteMyAccount = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteMyAccount,
+    onSuccess: (data) => {
+      console.log("Account deleted successfully!", data);
+      // Invalidate all queries related to the user, as their data is no longer valid.
+      // This is a broad invalidation, consider more specific ones if needed.
+      queryClient.invalidateQueries({ queryKey: ['myReviews'] });
+      queryClient.invalidateQueries({ queryKey: ['myFavorites'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] }); // Assuming you have a user profile query
+
+      alert("Your account has been successfully deleted.");
+
+      // After successful deletion, you might want to redirect the user
+      // For example, to the logout page or home page.
+      // import { useNavigate } from 'react-router-dom';
+      // const navigate = useNavigate();
+      // navigate('/logout'); or navigate('/');
+    },
+    onError: (error) => {
+      console.error("Error deleting account:", error);
+      alert(`Failed to delete account: ${error.message || "Unknown error"}`);
+    },
+  });
 };

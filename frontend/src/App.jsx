@@ -13,6 +13,7 @@ import ProfileView from "./components/MyAccount/ProfileView";
 import MyReviews from "./components/MyAccount/MyReviews";
 import FavoriteSites from "./components/MyAccount/FavoriteSites";
 import Proposals from "./components/MyAccount/Proposals";
+import DeleteAccount from "./components/MyAccount/DeleteAccount";
 
 const App = () => {
   const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
@@ -35,16 +36,16 @@ const App = () => {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
 
-          <Route element={<ProtectedRoute/>}>
+          <Route element={<ProtectedRoute />}>
             <Route path="my-account" element={<MyAccountPage />}>
               <Route index element={<ProfileView />} />
               <Route path="update-profile" element={<UpdateProfile />} />
-              <Route path="reviews" element={<MyReviews/>}/>
-              <Route path="favorite-sites" element={<FavoriteSites/>}/>
-              <Route path="proposals" element={<Proposals/>}/>
+              <Route path="reviews" element={<MyReviews />} />
+              <Route path="favorite-sites" element={<FavoriteSites />} />
+              <Route path="proposals" element={<Proposals />} />
+              <Route path="delete-account" element={<DeleteAccount />} />
             </Route>
           </Route>
-
         </Route>
       </Routes>
     </>

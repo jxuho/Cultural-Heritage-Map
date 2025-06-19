@@ -264,3 +264,14 @@ export const rejectProposal = async (proposalId, adminNotes) => {
         throw error.response?.data?.message || 'Failed to reject proposal'; // 서버 오류 메시지 우선 사용
     }
 };
+
+export const deleteMyAccount = async () => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/users/deleteMe`, { withCredentials: true });
+    return response.data; // Usually, the backend might return a success message or confirmation
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    // Re-throw with a more specific error message from the backend if available
+    throw error.response?.data?.message || 'Failed to delete account';
+  }
+};
