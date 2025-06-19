@@ -14,17 +14,17 @@ import MyReviews from "./components/MyAccount/MyReviews";
 import FavoriteSites from "./components/MyAccount/FavoriteSites";
 import Proposals from "./components/MyAccount/Proposals";
 import DeleteAccount from "./components/MyAccount/DeleteAccount";
+import ListPage from "./pages/ListPage"; // NEW: Import ListPage
 
 const App = () => {
   const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
   const loading = useAuthStore((state) => state.loading);
 
   useEffect(() => {
-    checkAuthStatus(); // 항상 로그인 상태 재검증
+    checkAuthStatus(); // Always re-validate login status
   }, [checkAuthStatus]);
 
   if (loading) {
-    // return <div>Loading authentication status...</div>; // 인증 상태 로딩 중 메시지 개선
     return <LoadingSpinner />;
   }
 
@@ -35,7 +35,8 @@ const App = () => {
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
-
+          <Route path="list" element={<ListPage />} /> {/* NEW: Add route for ListPage */}
+          
           <Route element={<ProtectedRoute />}>
             <Route path="my-account" element={<MyAccountPage />}>
               <Route index element={<ProfileView />} />

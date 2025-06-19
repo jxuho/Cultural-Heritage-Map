@@ -9,7 +9,7 @@ const MainLayout = () => {
   
   return (
     <div className="flex flex-col h-screen">
-      <Header currentUser={""} onLogout={""} />
+      <Header />
       <AccountManager/>
       <main className="grow relative">
         <Outlet />
