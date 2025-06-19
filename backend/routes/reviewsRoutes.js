@@ -13,7 +13,7 @@ router.get('/', reviewController.getAllReviews);
 // 특정 문화유산에 대한 리뷰 생성
 router.post('/',
   authController.protect,
-  authController.restrictTo('user'),
+  authController.restrictTo('user', 'admin'),
   reviewController.createReview)
 
 // 특정 문화유산의 특정 리뷰 조회
@@ -22,7 +22,7 @@ router.get('/:reviewId', reviewController.getReviewById);
 // 리뷰 수정 (사용자만 가능)
 router.patch('/:reviewId',
   authController.protect,
-  authController.restrictTo('user'),
+  authController.restrictTo('user', 'admin'),
   reviewController.updateReviewById);
 
 // 리뷰 삭제

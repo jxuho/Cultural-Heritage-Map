@@ -124,4 +124,20 @@ const proposalSchema = new mongoose.Schema({
     timestamps: true // createdAt, updatedAt 자동 추가
 });
 
+
+proposalSchema.index(
+    { culturalSite: 1, proposedBy: 1, status: 1 },
+    {
+        unique: true,
+        // 이 인덱스는 proposalType이 'create'가 아니고,
+        // culturalSite 필드가 존재하며 null이 아닌 경우에만 적용됩니다.
+        // 즉, 'create' 타입의 제안(culturalSite가 null)에는 이 고유성 제약이 적용되지 않습니다.
+        partialFilterExpression: {
+            proposalType: { $ne: 'create' },
+            culturalSite: { $exists: true, $ne: null }
+        },
+        name: 'unique_pending_update_delete_proposal' // 인덱스 이름을 명확하게 지정
+    }
+);
+
 module.exports = mongoose.model('Proposal', proposalSchema);

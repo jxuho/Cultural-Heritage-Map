@@ -149,10 +149,6 @@ area(${AREA_ID})->.searchArea;
   way["shop"](area.searchArea)${around};
   relation["shop"](area.searchArea)${around};
 
-  node["wikidata"](area.searchArea)${around};
-  way["wikidata"](area.searchArea)${around};
-  relation["wikidata"](area.searchArea)${around};
-
   node["wikipedia"](area.searchArea)${around};
   way["wikipedia"](area.searchArea)${around};
   relation["wikipedia"](area.searchArea)${around};

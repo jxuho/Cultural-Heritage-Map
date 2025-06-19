@@ -341,9 +341,9 @@ const getCulturalSiteById = asyncHandler(async (req, res, next) => {
 
     const culturalSite = await CulturalSite.aggregate(pipeline);
 
-   // --- 여기부터 백엔드 응답 직전 JavaScript를 이용한 데이터 후처리 ---
-   // reviews배열이 비어있을 경우, reviews: [user: {}]가 반환되는 문제 해결하기 위함.
-   // aggregation pipeline으로 해결하려 했으나, 실패함. 아래 js를 통해 조작하는 방법은 차선책.
+    // --- 여기부터 백엔드 응답 직전 JavaScript를 이용한 데이터 후처리 ---
+    // reviews배열이 비어있을 경우, reviews: [user: {}]가 반환되는 문제 해결하기 위함.
+    // aggregation pipeline으로 해결하려 했으나, 실패함. 아래 js를 통해 조작하는 방법은 차선책.
     let finalCulturalSite = culturalSite[0];
 
     // 1. reviews 배열 필터링: _id가 없거나 user._id가 없는 리뷰 제거
@@ -515,10 +515,9 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
 
     const parsedLat = parseFloat(lat);
     const parsedLon = parseFloat(lon);
-    const radius = 50; // 50m 반경
+    const radius = 50; // 50m 반경 (Overpass 쿼리에 사용)
 
-    // 2. Chemnitz 시 경계 내부 확인 (선택 사항이지만, Chemnitz 관련 데이터라면 유용)
-    // 이 단계는 필요한 경우에만 포함하세요. 만약 Chemnitz 밖의 장소도 검색해야 한다면 제거합니다.
+    // 2. Chemnitz 시 경계 내부 확인 (선택 사항)
     try {
         if (!isPointInChemnitz(parsedLat, parsedLon)) {
             return next(new AppError('입력된 위치가 Chemnitz 시 경계 내부에 있지 않아 주변 OSM 문화유산을 검색할 수 없습니다.', 400));
@@ -528,40 +527,66 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
     }
 
     // 3. Overpass 쿼리 생성
-    // extendedCulturalSiteQuery는 radius, lat, lon을 받습니다. 
-    const overpassQuery = extendedCulturalSiteQuery(radius, parsedLat, parsedLon); // [cite: 7, 8, 9, 10, 11]
+    const overpassQuery = extendedCulturalSiteQuery(radius, parsedLat, parsedLon);
 
     // 4. Overpass API 호출
     let osmData;
     try {
         osmData = await queryOverpass(overpassQuery);
     } catch (error) {
-        // Overpass API 호출 실패 시 에러 처리
         return next(new AppError(`주변 OSM 문화유산 정보를 가져오는 데 실패했습니다: ${error.message}`, 500));
     }
 
     const osmElements = osmData.elements || [];
 
-
     const processedSitesPromises = osmElements.map(el => processOsmElementForCulturalSite(el));
-    
+
     let processedSites;
     try {
-        // Wait for all promises to resolve
         processedSites = await Promise.all(processedSitesPromises);
-        // Filter out any null values that might be returned by processOsmElementForCulturalSite
-        processedSites = processedSites.filter(site => site !== null);
+        processedSites = processedSites.filter(site =>
+            site !== null && !site.name.startsWith("Unnamed Site (ID:")
+        );
     } catch (error) {
-        // Handle errors that might occur within processOsmElementForCulturalSite
         return next(new AppError(`문화유산 데이터 처리 중 오류 발생: ${error.message}`, 500));
     }
 
-    // 5. 결과 반환
+    // Filter out sites already in your CulturalSite DB ---
+    // 5. 현재 데이터베이스에 저장된 문화재 목록 가져오기
+    // OSM sourceId를 기준으로 중복을 확인할 것이므로,
+    // 해당 지역 근처의 모든 CulturalSite를 가져오거나,
+    // processedSites의 sourceId들을 추출하여 일괄 쿼리하는 방법 등을 사용할 수 있습니다.
+    // 여기서는 간단하게 processedSites의 sourceId를 모두 가져와서 DB에서 찾는 방법을 사용합니다.
+
+    const osmSourceIds = processedSites.map(site => site.sourceId).filter(Boolean); // sourceId가 있는 것만 추출
+
+    let existingCulturalSites = [];
+    if (osmSourceIds.length > 0) {
+        try {
+            // MongoDB에서 해당 sourceId를 가진 CulturalSite들을 찾습니다.
+            // CulturalSite 모델에 sourceId 필드가 있다고 가정합니다.
+            existingCulturalSites = await CulturalSite.find({
+                sourceId: { $in: osmSourceIds }
+            }).select('sourceId'); // sourceId만 가져와서 효율성을 높입니다.
+        } catch (error) {
+            return next(new AppError(`기존 문화재 정보 조회 중 오류 발생: ${error.message}`, 500));
+        }
+    }
+
+    // 기존 문화재의 sourceId를 Set으로 만들어 빠른 조회를 가능하게 합니다.
+    const existingSourceIdsSet = new Set(existingCulturalSites.map(site => site.sourceId));
+
+    // 6. 데이터베이스에 없는 OSM 문화재만 필터링
+    const uniqueProcessedSites = processedSites.filter(site =>
+        !existingSourceIdsSet.has(site.sourceId)
+    );
+
+    // 7. 결과 반환 (단계 번호 조정)
     res.status(200).json({
         status: 'success',
-        results: processedSites.length,
+        results: uniqueProcessedSites.length,
         data: {
-            osmCulturalSites: processedSites
+            osmCulturalSites: uniqueProcessedSites
         }
     });
 });
@@ -611,7 +636,7 @@ const saveCulturalSiteToDb = asyncHandler(async (req, res, next) => {
     const culturalSiteData = req.body; // 이미 CulturalSite 스키마에 맞는 형식이라고 가정
 
     console.log(culturalSiteData);
-    
+
 
     // 필수 필드 존재 여부 재확인 (방어적 코딩)
     if (!culturalSiteData.name || !culturalSiteData.category || !culturalSiteData.location ||
