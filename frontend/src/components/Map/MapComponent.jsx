@@ -39,6 +39,7 @@ import useUiStore from "../../store/uiStore";
 
 // TanStack Query 훅 임포트
 import { useAllCulturalSites } from "../../hooks/useCulturalSitesQueries"; // 새롭게 추가
+import CurrentLocationButton from "./CurrentLocationButton";
 
 // MapEventsHandler 컴포넌트 추가
 const MapEventsHandler = () => {
@@ -108,7 +109,7 @@ const MapComponent = () => {
   const initialPosition = [50.8303, 12.91895]; // Chemnitz Lat, Lng
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full relative">
       <MapContainer
         center={initialPosition}
         zoom={14}
@@ -125,6 +126,8 @@ const MapComponent = () => {
         }}
         zoomControl={false}
       >
+      <CurrentLocationButton/>
+
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
