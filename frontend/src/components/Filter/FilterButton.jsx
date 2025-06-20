@@ -1,4 +1,4 @@
-// components/FilterButton.jsx (새 파일)
+// src/components/Filter/FilterButton.jsx 
 import React from 'react';
 
 const FilterButton = React.forwardRef(({ isOpen, onClick, ...props }, ref) => (
