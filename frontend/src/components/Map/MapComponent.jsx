@@ -1,5 +1,5 @@
 // src/components/MapComponent.jsx
-import React, { useRef, useMemo, useEffect, useCallback } from "react";
+import { useRef, useMemo, useEffect, useCallback } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -42,22 +42,28 @@ const MapCenterUpdater = () => {
   const map = useMap(); // Leaflet map 인스턴스를 가져옵니다.
   const jumpToPlace = useUiStore((state) => state.jumpToPlace);
   const clearJumpToPlace = useUiStore((state) => state.clearJumpToPlace);
+  const sidePanelWidth = useUiStore((state) => state.sidePanelWidth);
 
   // jumpToPlace에 따라 지도 중심 이동
   useEffect(() => {
     if (jumpToPlace) {
-      console.log("Map will fly to:", jumpToPlace.name);
       const lat = jumpToPlace.location.coordinates[1];
       const lng = jumpToPlace.location.coordinates[0];
       map.flyTo([lat, lng], 18, {
         animate: true,
         duration: 1.5,
       });
+
+      // 마커로 이동 후, sidebar 고려해서 중심으로 이동
+      setTimeout(() => {
+        let offsetX= (sidePanelWidth) / 2 - 20
+        map.panBy([offsetX, 0], { animate: true, duration: 0.5 });
+      }, 1600);
+
       clearJumpToPlace();
     }
-  }, [jumpToPlace, clearJumpToPlace, map]);
+  }, [jumpToPlace, clearJumpToPlace, map, sidePanelWidth]);
 
-  // 이 컴포넌트 자체는 UI를 렌더링하지 않습니다.
   return null;
 };
 
