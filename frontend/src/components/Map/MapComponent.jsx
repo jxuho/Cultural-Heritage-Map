@@ -58,7 +58,7 @@ const MapCenterUpdater = () => {
         setTimeout(() => {
           let offsetX = sidePanelWidth / 2 - 20;
           map.panBy([offsetX, 0], { animate: true, duration: 0.5 });
-        }, 1600);
+        }, 1700);
 
         clearJumpToPlace();
       }
