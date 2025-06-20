@@ -70,7 +70,7 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
   const handleReviewActionCompleted = useCallback(
     async (actionType, newRating, oldRating, comment) => {
       if (!currentUser) {
-        alert("리뷰를 작성/수정/삭제하려면 로그인해주세요.");
+        alert("Please sign in in order to create/update/delete review.");
         return;
       }
       // reviewMutation 훅 내부에서 에러 처리 및 캐시 업데이트가 이루어짐
@@ -87,10 +87,10 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
     },
     [reviewMutation, uiSelectedPlace?._id, userReview, currentUser]
   );
-  
+
   const handleNameClick = useCallback(() => {
     if (selectedPlaceData) {
-      setJumpToPlace(selectedPlaceData); 
+      setJumpToPlace(selectedPlaceData);
     }
   }, [selectedPlaceData, setJumpToPlace]);
 
@@ -143,7 +143,8 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
           onClick={toggleReviewsExpansion}
         >
           <h3 className="text-lg font-semibold text-blue-800 flex-grow">
-            리뷰 ({selectedPlaceData.reviewCount || 0})
+            {selectedPlaceData.reviewCount === 1 ? "Review" : "Reviews"} (
+            {selectedPlaceData.reviewCount || 0})
           </h3>
           {selectedPlaceData.averageRating !== undefined &&
             selectedPlaceData.averageRating !== null &&
@@ -197,19 +198,17 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
               ReviewDisplay 내부에서 자체적으로 처리하도록 유도할 수 있습니다. 
               여기서는 SidePanelItems에서 직접 처리하는 방식으로 유지합니다. */}
           {loadingReviews && (
-            <div className="p-4 text-center text-gray-500">Loading reviews...</div>
+            <div className="p-4 text-center text-gray-500">
+              Loading reviews...
+            </div>
           )}
           {reviewFetchError && (
             <ErrorMessage
-              message={
-                reviewsError?.message || "Failed to fetch reviews."
-              }
+              message={reviewsError?.message || "Failed to fetch reviews."}
             />
           )}
           {!loadingReviews && !reviewFetchError && reviews.length === 0 && (
-            <p className="p-4 text-center text-gray-500">
-              No reviews yet.
-            </p>
+            <p className="p-4 text-center text-gray-500">No reviews yet.</p>
           )}
           <ReviewDisplay
             reviews={otherReviews}
@@ -271,7 +270,9 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
           {/* Description Section */}
           {selectedPlaceData.description && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Description
+              </h3>
               <p className="text-gray-700 leading-relaxed">
                 {selectedPlaceData.description}
               </p>
