@@ -1,5 +1,5 @@
 // src/components/Review/MyReview.jsx
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import StarIcon from "../StarIcon";
 import ReviewForm from "../Review/ReviewForm";
 import useAuthStore from "../../store/authStore";
@@ -14,11 +14,7 @@ const MyReviews = () => {
   const currentUser = useAuthStore((state) => state.user);
 
   const [expandedReviewId, setExpandedReviewId] = useState(null);
-  const scrollContainerRef = useRef(null); // 스크롤될 목록을 감싸는 div의 ref
-  const headerRef = useRef(null); // 제목 부분을 감싸는 div의 ref (높이 계산용)
-  const [scrollAreaMaxHeight, setScrollAreaMaxHeight] = useState('auto'); // 스크롤 영역의 최대 높이 상태
 
-  // --- TanStack Query: Fetch My Reviews (using custom hook) ---
   const {
     data: reviews = [],
     isLoading: loadingReviews,
@@ -26,7 +22,6 @@ const MyReviews = () => {
     error: reviewsError,
   } = useMyReviews(); // Call the custom hook
 
-  // --- TanStack Query: Review Create/Update/Delete Mutation (using custom hook) ---
   const reviewMutation = useReviewMutation(); // Call the custom hook
 
   const handleReviewActionCompleted = useCallback(
@@ -58,60 +53,6 @@ const MyReviews = () => {
     },
     [reviewMutation, expandedReviewId, reviews]
   );
-
-  // 스크롤 영역의 최대 높이를 동적으로 계산
-  useEffect(() => {
-    const calculateMaxHeight = () => {
-      // Capture current ref values
-      const currentScrollContainer = scrollContainerRef.current;
-      const currentHeader = headerRef.current;
-
-      if (currentScrollContainer && currentHeader) {
-        // 이 컴포넌트의 전체 높이를 가져옵니다. (p-6 bg-white rounded-lg shadow-md div)
-        const parentTotalHeight = currentScrollContainer.parentElement.clientHeight;
-
-        // 제목 섹션의 높이
-        const headerHeight = currentHeader.offsetHeight;
-
-        // 컴포넌트의 패딩 (p-6은 상하 24px * 2 = 48px)
-        const componentPaddingY = 48;
-
-        // 실제 스크롤 가능한 영역의 높이 계산
-        // 전체 높이 - (제목 높이 + 컴포넌트 자체 상하 패딩 + (옵션: 기타 고정 요소 높이))
-        // 리뷰 항목 내부의 확장되는 높이는 flex-grow로 조절되므로, 여기서는 고정된 요소만 고려합니다.
-        const calculatedHeight = parentTotalHeight - headerHeight - componentPaddingY;
-
-        setScrollAreaMaxHeight(`${calculatedHeight}px`);
-      }
-    };
-
-    calculateMaxHeight(); // 초기 마운트 시 계산
-
-    // 윈도우 리사이즈 시 높이 재계산
-    window.addEventListener('resize', calculateMaxHeight);
-
-    // Capture the current parent element for ResizeObserver
-    const observedElement = scrollContainerRef.current?.parentElement;
-    let resizeObserver;
-
-    // ResizeObserver를 사용하여 DOM 크기 변경 감지 (예: 항목 확장/축소)
-    if (observedElement) {
-      resizeObserver = new ResizeObserver(() => {
-        // DOM 업데이트 후 높이 계산을 지연시키는 것이 안전합니다.
-        // requestAnimationFrame을 사용하면 브라우저의 다음 리페인트 전에 실행됩니다.
-        requestAnimationFrame(calculateMaxHeight); // setTimeout 대신 requestAnimationFrame 사용 권장
-      });
-      resizeObserver.observe(observedElement);
-    }
-
-    return () => {
-      window.removeEventListener('resize', calculateMaxHeight);
-      // Use the captured 'observedElement' for unobserving
-      if (resizeObserver && observedElement) {
-        resizeObserver.unobserve(observedElement);
-      }
-    };
-  }, [reviews, expandedReviewId]); // expandedReviewId를 의존성 배열에 추가하여 항목 확장 시 재계산
 
   // --- 로딩/에러/빈 리뷰 상태 처리 ---
   const renderContent = () => {
@@ -165,13 +106,13 @@ const MyReviews = () => {
               }
             >
               <div className="flex items-center mb-2">
-                {review.culturalSite.imageUrl && (
+                {/* {review.culturalSite.imageUrl && (
                   <img
                     src={review.culturalSite.imageUrl}
                     alt={`${review.culturalSite.name}'s image`}
                     className="w-8 h-8 rounded-full object-cover mr-2 border border-gray-200"
                   />
-                )}
+                )} */}
                 <p className="font-semibold text-gray-800 mr-2 flex-grow">
                   {review.culturalSite.name || "Unknown"}
                 </p>
@@ -221,24 +162,21 @@ const MyReviews = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md flex flex-col h-full">
+    <div className="p-6 rounded-lg shadow-md flex flex-col h-full">
       {/* Add BackButton here */}
       <div className="flex justify-start mb-4">
         <BackButton />
       </div>
 
       {/* 제목 섹션 - Ref 연결 */}
-      <div ref={headerRef}>
+      <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">
           My Reviews
         </h2>
       </div>
 
-      {/* 스크롤 가능한 리뷰 목록 영역 - Ref 연결 및 동적 maxHeight 적용 */}
       <div
-        ref={scrollContainerRef}
         className="overflow-y-auto pr-2 flex-grow"
-        style={{ maxHeight: scrollAreaMaxHeight }}
       >
         {renderContent()}
       </div>

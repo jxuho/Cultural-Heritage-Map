@@ -15,6 +15,7 @@ import FavoriteSites from "./components/MyAccount/FavoriteSites";
 import Proposals from "./components/MyAccount/Proposals";
 import DeleteAccount from "./components/MyAccount/DeleteAccount";
 import ListPage from "./pages/ListPage";
+import UsersManagementPage from "./components/MyAccount/UsersManagementPage";
 
 const App = () => {
   const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
@@ -45,6 +46,7 @@ const App = () => {
               <Route path="favorite-sites" element={<FavoriteSites />} />
               <Route path="proposals" element={<Proposals />} />
               <Route path="delete-account" element={<DeleteAccount />} />
+              <Route path="users" element={<UsersManagementPage />} />
             </Route>
           </Route>
         </Route>

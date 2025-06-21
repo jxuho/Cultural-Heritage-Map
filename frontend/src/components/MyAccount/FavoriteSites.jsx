@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { BsStarFill } from "react-icons/bs";
 import useAuthStore from "../../store/authStore";
 import {
@@ -12,9 +12,6 @@ import BackButton from "../BackButton";
 const FavoriteSites = () => {
   const currentUser = useAuthStore((state) => state.user);
   const [expandedSiteId, setExpandedSiteId] = useState(null);
-  const scrollContainerRef = useRef(null); // 스크롤 컨테이너 참조
-  const headerRef = useRef(null); // 제목 부분 참조 (높이 계산용)
-  const [scrollAreaMaxHeight, setScrollAreaMaxHeight] = useState("auto"); // 스크롤 영역 최대 높이 상태
 
   const {
     data: myFavorites,
@@ -50,60 +47,6 @@ const FavoriteSites = () => {
   const handleSiteClick = (siteId) => {
     setExpandedSiteId((prevId) => (prevId === siteId ? null : siteId));
   };
-
-  // 컴포넌트 마운트 시 또는 UI 변경 시 스크롤 영역 높이 계산
-  useEffect(() => {
-    const calculateMaxHeight = () => {
-      // Capture current ref values
-      const currentScrollContainer = scrollContainerRef.current;
-      const currentHeader = headerRef.current;
-
-      if (currentScrollContainer && currentHeader) {
-        const parentTotalHeight = currentScrollContainer.parentElement.clientHeight;
-        const headerHeight = currentHeader.offsetHeight;
-        const componentPaddingY = 48;
-        const fixedFooterHeight = favoriteMutation.isPending ? 40 : 0;
-
-        const calculatedHeight =
-          parentTotalHeight -
-          headerHeight -
-          componentPaddingY -
-          fixedFooterHeight;
-
-        setScrollAreaMaxHeight(`${calculatedHeight}px`);
-      }
-    };
-
-    calculateMaxHeight(); // Initial calculation on mount
-
-    window.addEventListener("resize", calculateMaxHeight);
-
-    // Capture the current parent element for ResizeObserver
-    const observedElement = scrollContainerRef.current?.parentElement;
-    let resizeObserver;
-
-    if (observedElement) {
-      resizeObserver = new ResizeObserver(() => {
-        requestAnimationFrame(calculateMaxHeight);
-      });
-      resizeObserver.observe(observedElement);
-    }
-
-    // cleanup function
-    return () => {
-      window.removeEventListener("resize", calculateMaxHeight);
-      // Use the captured 'observedElement' for unobserving
-      if (resizeObserver && observedElement) {
-        resizeObserver.unobserve(observedElement);
-      }
-    };
-  }, [
-    myFavorites,
-    isLoadingFavorites,
-    isFavoritesError,
-    favoriteMutation.isPending,
-    expandedSiteId,
-  ]);
 
   // --- Loading/Error/Empty Favorites State Handling ---
   const renderContent = () => {
@@ -166,7 +109,7 @@ const FavoriteSites = () => {
               className="flex items-center justify-between p-4 cursor-pointer"
               onClick={() => handleSiteClick(site._id)}
             >
-              <span className="text-lg font-semibold text-gray-800 flex-grow pr-4">
+              <span className="text-lg font-semibold text-gray-800 flex-grow pr-4 break-all">
                 {site.name}
               </span>
               <button
@@ -201,7 +144,7 @@ const FavoriteSites = () => {
                         ))}
                       </div>
                       <span className="font-bold text-gray-800">
-                        {site.averageRating.toFixed(1)} ({site.reviewCount}{" "}
+                        {site.averageRating.toFixed(1)} ({site.reviewCount}
                         reviews)
                       </span>
                     </div>
@@ -209,7 +152,7 @@ const FavoriteSites = () => {
 
                 {site.category && (
                   <p className="mb-1">
-                    <span className="font-semibold">Category:</span>{" "}
+                    <span className="font-semibold">Category:</span>
                     {site.category
                       ?.replace(/_/g, " ")
                       .split(" ")
@@ -226,7 +169,7 @@ const FavoriteSites = () => {
                 )}
                 {site.website && (
                   <p className="mb-1">
-                    <span className="font-semibold">Website:</span>{" "}
+                    <span className="font-semibold">Website:</span>
                     <a
                       href={site.website}
                       target="_blank"
@@ -239,7 +182,7 @@ const FavoriteSites = () => {
                 )}
                 {site.openingHours && (
                   <p className="mb-1">
-                    <span className="font-semibold">Opening Hours:</span>{" "}
+                    <span className="font-semibold">Opening Hours:</span>
                     {site.openingHours}
                   </p>
                 )}
@@ -276,16 +219,14 @@ const FavoriteSites = () => {
           <BackButton />
       </div>
 
-      <div ref={headerRef}>
+      <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">
           My Favorites
         </h2>
       </div>
 
       <div
-        ref={scrollContainerRef}
         className="overflow-y-auto pr-2 flex-grow"
-        style={{ maxHeight: scrollAreaMaxHeight }}
       >
         {renderContent()}
       </div>

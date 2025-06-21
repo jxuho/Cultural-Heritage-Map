@@ -295,3 +295,16 @@ export const fetchUserById = async (userId) => {
     throw error.response?.data?.message || 'Failed to fetch user';
   }
 };
+
+export const fetchAllUsers = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/users`, {
+      withCredentials: true, // 인증 쿠키 포함 (admin 인증 필요 시)
+    });
+
+    return response.data.data.users; // 배열 형태 반환
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    throw error.response?.data?.message || "Failed to fetch users";
+  }
+};

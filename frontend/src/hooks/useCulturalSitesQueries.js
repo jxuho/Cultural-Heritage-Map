@@ -20,7 +20,8 @@ import {
   acceptProposal,
   rejectProposal,
   deleteMyAccount,
-  fetchUserById
+  fetchUserById,
+  fetchAllUsers
 } from '../api/culturalSitesApi'; // API 함수 임포트
 
 // 모든 문화재 목록 가져오기
@@ -303,6 +304,14 @@ export const useUserById = (userId) => {
     queryKey: ['user', userId],
     queryFn: () => fetchUserById(userId),
     enabled: !!userId, // userId가 존재할 때만 실행
+    staleTime: 1000 * 60 * 5, // 5분 동안 캐싱
+  });
+};
+
+export const useAllUsers = () => {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: fetchAllUsers,
     staleTime: 1000 * 60 * 5, // 5분 동안 캐싱
   });
 };
