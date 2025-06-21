@@ -5,12 +5,15 @@ import ReviewDisplay from "../Review/ReviewDisplay";
 import { BsStar, BsStarFill } from "react-icons/bs";
 import useAuthStore from "../../store/authStore";
 import { useCallback } from "react";
+import { useCulturalSiteDetail } from "../../hooks/data/useCulturalSitesQueries";
 import {
-  useCulturalSiteDetail,
-} from "../../hooks/useCulturalSitesQueries";
-import {  useFavoriteMutation,
-  useMyFavorites} from "../../hooks/useFavoriteQuery"
-import { usePlaceReviews, useReviewMutation } from "../../hooks/useReviewQueries";
+  useFavoriteMutation,
+  useMyFavorites,
+} from "../../hooks/data/useFavoriteQueries";
+import {
+  usePlaceReviews,
+  useReviewMutation,
+} from "../../hooks/data/useReviewQueries";
 import useUiStore from "../../store/uiStore";
 import ErrorMessage from "../ErrorMessage"; // ErrorDisplay 대신 ErrorMessage 사용
 

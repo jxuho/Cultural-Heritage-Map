@@ -15,11 +15,11 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import useFilterStore from "../../store/filterStore";
 import useUiStore from "../../store/uiStore";
 
-import { useAllCulturalSites } from "../../hooks/useCulturalSitesQueries";
+import { useAllCulturalSites } from "../../hooks/data/useCulturalSitesQueries";
 import CurrentLocationButton from "./CurrentLocationButton";
 
 import CulturalSiteMarkers from "./CulturalSiteMarkers";
-import useViewport from "../../hooks/useViewPort";
+import useViewport from "../../hooks/ui/useViewPort";
 
 // MapEventsHandler 컴포넌트
 const MapEventsHandler = () => {

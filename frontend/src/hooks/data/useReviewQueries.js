@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createReview, deleteReview, fetchReviewsByPlaceId, getMyReviews, updateReview } from "../api/reviewApi";
+import { createReview, deleteReview, fetchReviewsByPlaceId, getMyReviews, updateReview } from "../../api/reviewApi";
 
 // 특정 문화재 리뷰 목록 가져오기
 export const usePlaceReviews = (placeId, isExpanded) => {

@@ -1,7 +1,7 @@
 // src/components/SidePanel/SidePanelContent.jsx
 import React, { useState } from 'react'; // isReviewsExpanded is local
 import useUiStore from "../../store/uiStore"; // Direct import
-import { useCulturalSiteDetail } from "../../hooks/useCulturalSitesQueries"; // Direct import
+import { useCulturalSiteDetail } from "../../hooks/data/useCulturalSitesQueries"; // Direct import
 
 import SidePanelSkeleton from "./SidePanelSkeleton";
 import ErrorMessage from "../ErrorMessage";

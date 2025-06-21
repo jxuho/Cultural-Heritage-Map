@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addFavorite, deleteFavorite, fetchMyFavorites } from "../api/favoriteApi";
+import { addFavorite, deleteFavorite, fetchMyFavorites } from "../../api/favoriteApi";
 
 // 내 즐겨찾기 목록 가져오기
 export const useMyFavorites = (userId) => {

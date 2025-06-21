@@ -1,6 +1,6 @@
-// src/hooks/useSidePanelResizer.js
+// src/hooks/ui/useSidePanelResizer.js
 import { useCallback, useEffect, useState } from "react"; // useRef 제거
-import useUiStore from "../store/uiStore";
+import useUiStore from "../../store/uiStore";
 import useViewport from "./useViewPort";
 
 // detailRef를 인자로 받도록 변경합니다.

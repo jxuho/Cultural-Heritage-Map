@@ -7,7 +7,7 @@ import useAuthStore from "../../store/authStore";
 import {
   useMyReviews,
   useReviewMutation,
-} from "../../hooks/useReviewQueries";
+} from "../../hooks/data/useReviewQueries";
 import BackButton from "../BackButton";
 
 const MyReviews = () => {

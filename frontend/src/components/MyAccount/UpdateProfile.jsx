@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import defaultProfileImg from "../../assets/profile_image.svg";
 import useAuthStore from "../../store/authStore";
 import BackButton from '../BackButton';
-import { useUpdateProfile } from '../../hooks/useUserQueries';
+import { useUpdateProfile } from '../../hooks/data/useUserQueries';
 
 const UpdateProfile = () => {
     const nameRegex = /^(?!^\d+$)[\p{L}][\p{L}\p{N}\s.'-]*$/u;

@@ -1,4 +1,4 @@
-// src/hooks/useCulturalSitesQueries.js
+// src/hooks/data/useCulturalSitesQueries.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchAllCulturalSites,
@@ -7,7 +7,7 @@ import {
   createCulturalSite,
   deleteCulturalSite,
   updateCulturalSite,
-} from '../api/culturalSitesApi'; // API 함수 임포트
+} from '../../api/culturalSitesApi'; // API 함수 임포트
 
 // 모든 문화재 목록 가져오기
 export const useAllCulturalSites = (params) => {

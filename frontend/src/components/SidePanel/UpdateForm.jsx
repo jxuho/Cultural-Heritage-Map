@@ -4,8 +4,8 @@ import useUiStore from "../../store/uiStore";
 import useAuthStore from "../../store/authStore";
 import {
   useUpdateCulturalSite,
-} from "../../hooks/useCulturalSitesQueries";
-import { useSubmitProposal } from "../../hooks/useProposalQuery";
+} from "../../hooks/data/useCulturalSitesQueries";
+import { useSubmitProposal } from "../../hooks/data/useProposalQueries";
 import { CULTURAL_CATEGORY } from "../../config/culturalSiteConfig";
 
 const UpdateForm = () => {

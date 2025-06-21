@@ -4,7 +4,7 @@ import useAuthStore from "../../store/authStore";
 import {
   useMyFavorites,
   useFavoriteMutation,
-} from "../../hooks/useFavoriteQuery";
+} from "../../hooks/data/useFavoriteQueries";
 import ErrorMessage from "../ErrorMessage";
 import StarIcon from "../StarIcon";
 import BackButton from "../BackButton";

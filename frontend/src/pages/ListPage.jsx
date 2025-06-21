@@ -1,6 +1,6 @@
 // src/pages/ListPage.jsx
 import React from "react";
-import { useAllCulturalSites } from "../hooks/useCulturalSitesQueries";
+import { useAllCulturalSites } from "../hooks/data/useCulturalSitesQueries";
 import FilterPanel from "../components/Filter/FilterPanel";
 import useFilterStore from "../store/filterStore"; // Import useFilterStore
 import {

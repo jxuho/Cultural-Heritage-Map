@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import useUiStore from "../../store/uiStore";
 import { Menu, MenuItem } from "../ContextMenu";
-import { useNearbyOsm } from "../../hooks/useCulturalSitesQueries";
+import { useNearbyOsm } from "../../hooks/data/useCulturalSitesQueries";
 import useAuthStore from "../../store/authStore";
 
 const MapContextMenu = () => {

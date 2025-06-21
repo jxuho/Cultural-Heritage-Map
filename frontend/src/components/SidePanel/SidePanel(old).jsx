@@ -5,12 +5,12 @@ import useAuthStore from "../../store/authStore"; // Import the auth store
 import { useQueryClient } from "@tanstack/react-query";
 
 import Resizer from "./SidePanelResizer";
-import useSidePanelResizer from "../../hooks/useSidePanelResizer";
+import useSidePanelResizer from "../../hooks/ui/useSidePanelResizer";
 
 import {
   useCulturalSiteDetail,
   useDeleteCulturalSite,
-} from "../../hooks/useCulturalSitesQueries";
+} from "../../hooks/data/useCulturalSitesQueries";
 
 import SidePanelItems from "./SidePanelItems";
 import SidePanelSkeleton from "./SidePanelSkeleton";

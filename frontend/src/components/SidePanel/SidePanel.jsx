@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import useUiStore from "../../store/uiStore";
 import Resizer from "./SidePanelResizer";
-import useSidePanelResizer from "../../hooks/useSidePanelResizer";
+import useSidePanelResizer from "../../hooks/ui/useSidePanelResizer";
 
 // Import the new sub-components
 import SidePanelContent from "./SidePanelContent";

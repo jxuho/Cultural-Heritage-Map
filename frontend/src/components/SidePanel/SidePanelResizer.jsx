@@ -1,5 +1,5 @@
 // src/components/SidePanel/SidePanelResizer.jsx
-import useSidePanelResizer from '../../hooks/useSidePanelResizer'; // useSidePanelResizer 훅 임포트
+import useSidePanelResizer from '../../hooks/ui/useSidePanelResizer'; // useSidePanelResizer 훅 임포트
 
 const SidePanelResizer = ({ detailRef }) => { // detailRef를 prop으로 받습니다.
   const {

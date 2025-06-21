@@ -1,7 +1,7 @@
 // src/components/SidePanel/SidePanelButtons.jsx
 import useAuthStore from "../../store/authStore"; // Direct import
 import useUiStore from "../../store/uiStore"; // Direct import
-import { useCulturalSiteDetail, useDeleteCulturalSite } from "../../hooks/useCulturalSitesQueries"; // Direct imports
+import { useCulturalSiteDetail, useDeleteCulturalSite } from "../../hooks/data/useCulturalSitesQueries"; // Direct imports
 
 const SidePanelButtons = () => {
   // Directly access state and actions from stores

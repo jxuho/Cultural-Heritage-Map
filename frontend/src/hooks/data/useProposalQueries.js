@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { acceptProposal, fetchAllProposals, fetchMyProposals, rejectProposal, submitProposal } from "../api/proposalApi";
+import { acceptProposal, fetchAllProposals, fetchMyProposals, rejectProposal, submitProposal } from "../../api/proposalApi";
 
 export const useSubmitProposal = () => {
   return useMutation({

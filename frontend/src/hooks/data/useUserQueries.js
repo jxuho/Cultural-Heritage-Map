@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { deleteMyAccount, fetchAllUsers, fetchUserById, updateProfileApi, updateUserRoleApi } from '../api/userApi'; 
+import { deleteMyAccount, fetchAllUsers, fetchUserById, updateProfileApi, updateUserRoleApi } from '../../api/userApi'; 
 
 // 프로필 업데이트를 위한 useMutation 훅
 export const useUpdateProfile = () => {

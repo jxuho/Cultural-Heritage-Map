@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import {
   useProposalModeration,
-} from "../../hooks/useProposalQuery";
-import { useProposals } from "../../hooks/useProposalQuery";
+} from "../../hooks/data/useProposalQueries";
+import { useProposals } from "../../hooks/data/useProposalQueries";
 import BackButton from "../BackButton";
 
 const Proposals = () => {
