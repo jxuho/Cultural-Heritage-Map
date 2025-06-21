@@ -504,7 +504,12 @@ const deleteCulturalSiteById = asyncHandler(async (req, res, next) => {
  * GET /api/v1/cultural-sites/nearby-osm?lat={latitude}&lon={longitude}
  */
 const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
-    const { lon, lat } = req.query; // URL 쿼리 파라미터에서 위/경도 추출
+    const { lon, lat, noReverseGeocode } = req.query; // Added noReverseGeocode query parameter
+
+    // Determine the flag for reverse geocoding
+    // If noReverseGeocode is 'true' (string), then set performReverseGeocoding to false.
+    // Otherwise, it defaults to true.
+    const performReverseGeocoding = noReverseGeocode !== 'true';
 
     // 1. 위/경도 유효성 검사
     if (!isValidLatLng(lon, lat)) {
@@ -537,7 +542,8 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
 
     const osmElements = osmData.elements || [];
 
-    const processedSitesPromises = osmElements.map(el => processOsmElementForCulturalSite(el));
+    // Pass the performReverseGeocoding flag to the mapping function
+    const processedSitesPromises = osmElements.map(el => processOsmElementForCulturalSite(el, performReverseGeocoding));
 
     let processedSites;
     try {

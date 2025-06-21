@@ -125,6 +125,23 @@ const determineCulturalSiteAddress = async (tags, lat, lon, name, sourceId) => {
     return address;
 };
 
+const determineCulturalSiteAddressFromTags = (tags) => {
+    let address = '';
+    if (tags['addr:street'] && tags['addr:housenumber']) {
+        address = `${tags['addr:street']} ${tags['addr:housenumber']}`;
+    } else if (tags['addr:full']) {
+        address = tags['addr:full'];
+    } else if (tags.address) {
+        address = tags.address;
+    } else if (tags.street && tags.housenumber) {
+        address = `${tags.street} ${tags.housenumber}`;
+    }
+    if (tags['addr:postcode'] && address) address += `, ${tags['addr:postcode']}`;
+    if (tags['addr:city'] && address) address += `, ${tags['addr:city']}`;
+    else if (!address && tags.city) address = tags.city;
+    return address;
+};
+
 /**
  * OSM element의 tags를 기반으로 CulturalSite의 카테고리를 매핑합니다.
  * @param {object} tags - OSM element의 tags 객체.
@@ -168,15 +185,15 @@ const mapCulturalSiteCategory = (tags) => {
  * @returns {Promise<object>} culturalSiteData - CulturalSite 스키마에 맞는 데이터 객체.
  * @throws {AppError} - 필수 필드 누락 또는 유효하지 않은 데이터인 경우.
  */
-const processOsmElementForCulturalSite = async (osmElement) => {
+const processOsmElementForCulturalSite = async (osmElement, performReverseGeocoding = true) => { // Added new parameter with default true
     const { type, id, tags } = osmElement;
-    
+
     // 1. sourceId 생성
     const sourceId = `${type}/${id}`;
 
     // 2. OSM 타입에 따라 위도(lat)와 경도(lon) 추출
     let lat, lon;
-      // 1. 최우선 순위: 'center' 객체 내부에 lat/lon 필드가 있는 경우 (out center; 옵션의 결과)
+    // 1. 최우선 순위: 'center' 객체 내부에 lat/lon 필드가 있는 경우 (out center; 옵션의 결과)
     if (osmElement.center && typeof osmElement.center.lat === 'number' && typeof osmElement.center.lon === 'number') {
         lat = osmElement.center.lat;
         lon = osmElement.center.lon;
@@ -203,7 +220,6 @@ const processOsmElementForCulturalSite = async (osmElement) => {
         throw new AppError(`Element ${sourceId} (type: ${type})에서 유효한 위치 정보를 찾을 수 없습니다. (lat/lon, geometry, bounds 모두 없음)`, 400);
     }
 
-    
     // 3. 위/경도 유효성 검사
     if (!lat || !lon) {
         throw new AppError(`Skipping element ${sourceId} due to missing coordinates.`, 400);
@@ -214,8 +230,11 @@ const processOsmElementForCulturalSite = async (osmElement) => {
     // 4. CulturalSite 필드 결정
     const name = determineCulturalSiteName(tags, sourceId);
     const description = determineCulturalSiteDescription(tags, name);
-    const address = await determineCulturalSiteAddress(tags, parsedLat, parsedLon, name, sourceId);
-    const category = mapCulturalSiteCategory(tags); 
+    // Conditionally call determineCulturalSiteAddress based on the flag
+    const address = performReverseGeocoding
+        ? await determineCulturalSiteAddress(tags, parsedLat, parsedLon, name, sourceId)
+        : determineCulturalSiteAddressFromTags(tags); // New helper to only get address from tags
+    const category = mapCulturalSiteCategory(tags); // 변경된 카테고리 매핑 로직 적용
 
     // 5. 필수 필드 최종 확인
     if (!name || !category || isNaN(parsedLat) || isNaN(parsedLon) || !sourceId) {
