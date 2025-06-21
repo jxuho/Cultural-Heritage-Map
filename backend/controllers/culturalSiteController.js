@@ -376,8 +376,6 @@ const getCulturalSiteById = asyncHandler(async (req, res, next) => {
     });
 })
 
-
-
 const updateCulturalSiteById = asyncHandler(async (req, res, next) => {
     // 1. 관리자 권한 확인
     if (!req.user || req.user.role !== 'admin') {
@@ -551,13 +549,7 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
         return next(new AppError(`문화유산 데이터 처리 중 오류 발생: ${error.message}`, 500));
     }
 
-    // Filter out sites already in your CulturalSite DB ---
-    // 5. 현재 데이터베이스에 저장된 문화재 목록 가져오기
-    // OSM sourceId를 기준으로 중복을 확인할 것이므로,
-    // 해당 지역 근처의 모든 CulturalSite를 가져오거나,
-    // processedSites의 sourceId들을 추출하여 일괄 쿼리하는 방법 등을 사용할 수 있습니다.
-    // 여기서는 간단하게 processedSites의 sourceId를 모두 가져와서 DB에서 찾는 방법을 사용합니다.
-
+    // 5. Filter out sites already in your CulturalSite DB ---
     const osmSourceIds = processedSites.map(site => site.sourceId).filter(Boolean); // sourceId가 있는 것만 추출
 
     let existingCulturalSites = [];

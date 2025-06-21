@@ -215,7 +215,7 @@ const processOsmElementForCulturalSite = async (osmElement) => {
     const name = determineCulturalSiteName(tags, sourceId);
     const description = determineCulturalSiteDescription(tags, name);
     const address = await determineCulturalSiteAddress(tags, parsedLat, parsedLon, name, sourceId);
-    const category = mapCulturalSiteCategory(tags); // 변경된 카테고리 매핑 로직 적용
+    const category = mapCulturalSiteCategory(tags); 
 
     // 5. 필수 필드 최종 확인
     if (!name || !category || isNaN(parsedLat) || isNaN(parsedLon) || !sourceId) {
