@@ -7,7 +7,7 @@ const User = require('../models/User'); // User 모델 가져오기
 passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL, // e.g., '/api/v1/auth/google/callback'
+        callbackURL: process.env.GOOGLE_CALLBACK_URL, // '/api/v1/auth/google/callback'
         passReqToCallback: true // req 객체에 접근하기 위해
     },
     async (request, accessToken, refreshToken, profile, done) => {

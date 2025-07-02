@@ -1,6 +1,4 @@
-// geojson을 mongodb로 import하는 코드.
-// reverse-geocoding을 통해 address를 가지고온다.
-
+// importGeojson.js
 require('dotenv').config();
 const fsAsync = require('fs/promises');
 const path = require('path');
@@ -8,12 +6,14 @@ const mongoose = require('mongoose');
 const CulturalSite = require('../models/CulturalSite'); // CulturalSite 모델 경로
 const { processOsmElementForCulturalSite } = require('../utils/osmDataProcessor');
 
-
 /**
  * turbo가 아닌, osm api에서 받아온 정보(elements)를 mongodb에 저장하는 함수.
  * /backend/data 내부의 최신 chemnitz_cultural_sites_[시간].geojson을 가지고온다.
+ * @param {boolean} performReverseGeocoding - 역지오코딩을 수행할지 여부 (true/false).
+ * node scripts/importGeojson.js
+ * node scripts/importGeojson.js --no-reverse-geocode
  */
-const importGeojson = async () => {
+const importGeojson = async (performReverseGeocoding) => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('MongoDB Connected...');
@@ -25,10 +25,9 @@ const importGeojson = async () => {
         const raw = await fsAsync.readFile(dataPath, 'utf8');
         const geojson = JSON.parse(raw);
 
-
         const culturalSitesToInsert = [];
 
-        // overpass-turbo
+        // overpass-turbo (GeoJSON FeatureCollection)
         if (geojson.features) {
             for (const feature of geojson.features) {
                 const properties = feature.properties;
@@ -43,45 +42,41 @@ const importGeojson = async () => {
                     tags: properties
                 };
 
-                // 필수 필드 확인 (processOsmElementForCulturalSite 내부에서 처리되므로, 여기서는 간략화)
                 if (!osmElementLike.id || !osmElementLike.geometry || !osmElementLike.geometry.coordinates) {
-                    console.warn('Skipping feature due to missing sourceId or geometry:', JSON.stringify(feature)); // [cite: 82, 93]
+                    console.warn('Skipping feature due to missing sourceId or geometry:', JSON.stringify(feature));
                     continue;
                 }
                 try {
                     // processOsmElementForCulturalSite를 사용하여 데이터 가공
-                    const culturalSiteData = await processOsmElementForCulturalSite(osmElementLike);
+                    // 여기에 인자를 직접 전달합니다.
+                    const culturalSiteData = await processOsmElementForCulturalSite(osmElementLike, performReverseGeocoding);
                     culturalSitesToInsert.push(culturalSiteData);
                 } catch (error) {
                     console.warn(`Error processing GeoJSON element ${osmElementLike.id}: ${error.message}`);
-                    // 유효하지 않은 요소는 건너뛰고 다음 요소로 진행
                 }
             }
         } else {
-            // Overpass API
+            // Overpass API (elements)
             for (const element of geojson.elements) {
-                // 필수 필드 확인 (processOsmElementForCulturalSite 내부에서 처리되므로, 여기서는 간략화)
                 if (!element.type || !element.id) {
                     console.warn('Skipping element due to missing sourceId or geometry:', JSON.stringify(element));
                     continue;
                 }
                 try {
                     // processOsmElementForCulturalSite를 사용하여 데이터 가공
-                    const culturalSiteData = await processOsmElementForCulturalSite(element);
+                    // 여기에 인자를 직접 전달합니다.
+                    const culturalSiteData = await processOsmElementForCulturalSite(element, performReverseGeocoding);
                     culturalSitesToInsert.push(culturalSiteData);
                 } catch (error) {
                     console.warn(`Error processing GeoJSON element ${element.id}: ${error.message}`);
-                    // 유효하지 않은 요소는 건너뛰고 다음 요소로 진행
                 }
             }
         }
 
-        // 기존 데이터 삭제 (옵션, 개발 시 유용)
         await CulturalSite.deleteMany({});
         console.log('Existing CulturalSites deleted.');
 
-        // 새 데이터 삽입
-        const result = await CulturalSite.insertMany(culturalSitesToInsert, { ordered: false }); // ordered: false로 오류 발생 시에도 나머지 데이터 삽입 시도
+        const result = await CulturalSite.insertMany(culturalSitesToInsert, { ordered: false });
         console.log(`Successfully inserted ${result.length} CulturalSites.`);
 
     } catch (error) {
@@ -97,18 +92,17 @@ const importGeojson = async () => {
 
 async function getLatestCulturalSitesFile() {
     const dataDir = path.join(__dirname, '../data');
-    // Updated pattern to only match 13-digit TIMESTAMPs
     const fileNamePattern = /^chemnitz_cultural_sites_(\d{13})\.(geo)?json$/;
 
     try {
-        const files = await fsAsync.readdir(dataDir); // Read all files in the data directory
+        const files = await fsAsync.readdir(dataDir);
         let latestFile = null;
-        let latestTimestamp = 0; // Initialize with 0 to find the largest timestamp
+        let latestTimestamp = 0;
 
         for (const file of files) {
             const match = file.match(fileNamePattern);
             if (match) {
-                const timestampPart = parseInt(match[1], 10); // Parse the 13-digit timestamp
+                const timestampPart = parseInt(match[1], 10);
                 if (timestampPart > latestTimestamp) {
                     latestTimestamp = timestampPart;
                     latestFile = file;
@@ -122,13 +116,17 @@ async function getLatestCulturalSitesFile() {
             return latestFilePath;
         } else {
             console.warn('No recent "chemnitz_cultural_sites_TIMESTAMP.json" files found in the data directory.');
-            return null; // Return null if no matching file is found
+            return null;
         }
     } catch (error) {
         console.error('Error while searching for the latest cultural sites file:', error);
-        throw error; // Re-throw the error for upstream handling
+        throw error;
     }
 }
 
+// 명령줄 인자 처리: --no-reverse-geocode 플래그 확인
+const args = process.argv.slice(2); // node, importGeojson.js 다음의 인자들
+const shouldPerformReverseGeocoding = !args.includes('--no-reverse-geocode');
 
-importGeojson();
+// importGeojson 함수를 호출하면서 결정된 인자를 전달합니다.
+importGeojson(shouldPerformReverseGeocoding);

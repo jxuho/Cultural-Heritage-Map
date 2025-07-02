@@ -27,13 +27,12 @@ const createSendToken = (user, statusCode, res) => {
     res.cookie('jwt', token, cookieOptions);
 };
 
-
 // Google OAuth 콜백 처리
 const googleAuthCallback = asyncHandler(async (req, res, next) => {
     // Passport.js가 req.user에 인증된 사용자 정보를 자동으로 넣어줍니다.
     // 이는 Passport GoogleStrategy의 `done` 콜백에서 반환된 user 객체입니다.
     if (!req.user) {
-        return next(new AppError('Google 인증에 실패했습니다.', 401));
+        return next(new AppError('Google auth failed.', 401));
     }
 
     // req.user는 Passport GoogleStrategy의 verify callback에서 반환된 User 모델 인스턴스입니다.
@@ -58,7 +57,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
     if (!token) {
         return next(
-            new AppError('로그인하지 않았습니다! 접근하려면 로그인해주세요.', 401)
+            new AppError('You are not logged in! Please log in to access this.', 401)
         );
     }
 
@@ -69,7 +68,7 @@ const protect = asyncHandler(async (req, res, next) => {
     const currentUser = await User.findById(decoded.id);
     if (!currentUser) {
         return next(
-            new AppError('이 토큰에 해당하는 사용자가 더 이상 존재하지 않습니다.', 401)
+            new AppError('There is no user who corresponds to this token.', 401)
         );
     }
 
@@ -84,7 +83,7 @@ const restrictTo = (...roles) => {
         // roles 배열에 현재 사용자의 역할이 포함되어 있는지 확인
         if (!roles.includes(req.user.role)) {
             return next(
-                new AppError('이 작업을 수행할 권한이 없습니다.', 403)
+                new AppError('Do not have auth to do this.', 403)
             );
         }
         next();
@@ -101,7 +100,6 @@ const logout = (req, res) => {
     });
     res.status(200).json({ status: 'success' });
 };
-
 
 // Admin only: Change user roles
 const updateUserRole = asyncHandler(async (req, res, next) => {

@@ -13,137 +13,68 @@ const { processOsmElementForCulturalSite } = require('../utils/osmDataProcessor'
 const { CULTURAL_SITE_UPDATABLE_FIELDS, CULTURAL_CATEGORY } = require('../config/culturalSiteConfig');
 
 const getAllCulturalSites = asyncHandler(async (req, res, next) => {
-    // 1. 애그리게이션 파이프라인 초기화
+    // 1. Initialize aggregation pipeline
     let pipeline = [];
 
-    // 2. 텍스트 검색 ($match)
-    if (req.query.q) {
-        const searchTerm = req.query.q;
-        pipeline.push({
-            $match: {
-                $or: [
-                    { name: { $regex: searchTerm, $options: 'i' } },
-                    { description: { $regex: searchTerm, $options: 'i' } },
-                    { address: { $regex: searchTerm, $options: 'i' } }
-                ]
-            }
-        });
-    }
-
-    // 3. 카테고리 필터링 ($match)
-    if (req.query.category) {
-        const categories = req.query.category.split(',').map(cat => cat.trim());
-        pipeline.push({
-            $match: {
-                category: { $in: categories }
-            }
-        });
-    }
-
-    // 4.1. 원형(반경) 위치 기반 검색 ($geoWithin with $centerSphere)
-    if (req.query.distance && req.query.lat && req.query.lng) {
-        const { distance, lat, lng } = req.query;
-        if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng)) || isNaN(parseFloat(distance))) {
-            return next(new AppError('위치 기반 검색을 위한 lat, lng, distance 파라미터가 유효하지 않습니다.', 400));
-        }
-
-        const radiusInRadians = parseFloat(distance) / 6378137;
-        pipeline.push({
-            $match: {
-                location: {
-                    $geoWithin: {
-                        $centerSphere: [
-                            [parseFloat(lng), parseFloat(lat)], // MongoDB는 [경도, 위도] 순서
-                            radiusInRadians
-                        ]
-                    }
-                }
-            }
-        });
-    }
-
-    // 4.2. 뷰포트(직사각형) 위치 기반 검색 ($geoWithin with $box)
-    if (req.query.bounds) {
-        const bounds = req.query.bounds.split(',').map(coord => parseFloat(coord.trim()));
-        if (bounds.length === 4 && bounds.every(coord => !isNaN(coord))) {
-            const [swLng, swLat, neLng, neLat] = bounds;
-
-            pipeline.push({
-                $match: {
-                    location: {
-                        $geoWithin: {
-                            $box: [
-                                [swLng, swLat],
-                                [neLng, neLat]
-                            ]
-                        }
-                    }
-                }
-            });
-        } else {
-            return next(new AppError('유효하지 않은 bounds 파라미터입니다. southwestLng,southwestLat,northeastLng,northeastLat 형식이어야 합니다.', 400));
-        }
-    }
-
-    // --- 애그리게이션 파이프라인에서 추가 필드 계산 (평점, 리뷰 개수) ---
-    // 5. 리뷰 데이터를 조인하여 평균 평점 및 리뷰 개수 계산
+    // --- Calculate additional fields in the aggregation pipeline (rating, review count) ---
+    // 2. Join review data to calculate average rating and review count
     pipeline.push(
         {
             $lookup: {
-                from: 'reviews', // Review 모델의 컬렉션 이름 (소문자, 복수형)
-                localField: 'reviews', // CulturalSite의 reviews 필드
-                foreignField: '_id', // Review의 _id 필드
-                as: 'reviewsData' // 조인된 리뷰 데이터가 저장될 필드 이름
+                from: 'reviews', // Collection name for Review model (lowercase, plural)
+                localField: 'reviews', // 'reviews' field of CulturalSite
+                foreignField: '_id', // '_id' field of Review
+                as: 'reviewsData' // Field name to store joined review data
             }
         },
         {
             $addFields: {
                 averageRating: { $ifNull: [{ $avg: '$reviewsData.rating' }, 0] },
-                reviewCount: { $size: '$reviewsData' } // 리뷰 개수 계산
+                reviewCount: { $size: '$reviewsData' } // Calculate review count
             }
         }
     );
 
-    // 6. 정렬 기능 추가 (평점순, 즐겨찾기순, 리뷰 개수순)
+    // 3. Add sorting functionality (by rating, favorites, review count)
     // http://localhost:5000/api/v1/cultural-sites?sort=averageRating,-favoritesCount,reviewCount
     let sortStage = {};
     if (req.query.sort) {
-        const sortByFields = req.query.sort.split(','); // 콤마로 분리
+        const sortByFields = req.query.sort.split(','); // Split by comma
         sortByFields.forEach(field => {
             field = field.trim();
             if (field.startsWith('-')) {
-                sortStage[field.substring(1)] = -1; // 내림차순
+                sortStage[field.substring(1)] = -1; // Descending
             } else {
-                sortStage[field] = 1; // 오름차순
+                sortStage[field] = 1; // Ascending
             }
         });
     } else {
-        // 기본 정렬: 최신순
+        // Default sort: latest first
         sortStage = { createdAt: -1 };
     }
     pipeline.push({ $sort: sortStage });
 
-    // 7. 페이지네이션 (총 개수를 위해 미리 계산)
-    // 애그리게이션 파이프라인에서 총 개수와 실제 데이터를 함께 가져오는 패턴 (Recommended!)
-    // 현재는 임시로 limit을 1000개로 설정함. 이를 초과하면 뷰포트 기반 랜더링 등이 필요함.
+    // 4. Pagination (calculate total count beforehand)
+    // Pattern to get total count and actual data together in an aggregation pipeline (Recommended!)
+    // Currently, the limit is temporarily set to 1000. If exceeded, viewport-based rendering, etc., is required.
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 1000;
     const skip = (page - 1) * limit;
 
-    const totalResultsPipeline = [...pipeline]; // 현재까지의 필터링 파이프라인 복사
-    totalResultsPipeline.push({ $count: 'total' }); // 총 개수만 세는 스테이지 추가
+    const totalResultsPipeline = [...pipeline]; // Copy current filtering pipeline
+    totalResultsPipeline.push({ $count: 'total' }); // Add stage to count total results
 
     let totalResultDoc = await CulturalSite.aggregate(totalResultsPipeline);
     const totalResults = totalResultDoc.length > 0 ? totalResultDoc[0].total : 0;
     const totalPages = Math.ceil(totalResults / limit);
 
-    // 실제 데이터 가져오기 위한 페이지네이션 스테이지 추가
+    // Add pagination stages for actual data retrieval
     pipeline.push(
         { $skip: skip },
         { $limit: limit }
     );
 
-    // 8. 최종 필드 선택 ($project) - 필요한 필드만 포함
+    // 8. Final field selection ($project) - include only necessary fields
     pipeline.push({
         $project: {
             name: 1,
@@ -161,8 +92,8 @@ const getAllCulturalSites = asyncHandler(async (req, res, next) => {
             registeredBy: 1,
             createdAt: 1,
             updatedAt: 1,
-            averageRating: 1, // 계산된 평균 평점 포함
-            reviewCount: 1 // 계산된 리뷰 개수 포함
+            averageRating: 1, // Include calculated average rating
+            reviewCount: 1 // Include calculated review count
         }
     });
 
@@ -170,8 +101,8 @@ const getAllCulturalSites = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({
         status: 'success',
-        results: culturalSites.length, // 현재 페이지의 문서 개수
-        totalResults: totalResults, // 전체 검색 조건에 맞는 문서 개수
+        results: culturalSites.length, // Number of documents on the current page
+        totalResults: totalResults, // Total number of documents matching all search criteria
         page: page,
         totalPages: totalPages,
         limit: limit,
@@ -189,7 +120,7 @@ const getCulturalSiteById = asyncHandler(async (req, res, next) => {
 
     // 1. 유효한 ObjectId인지 확인 (선택 사항이지만 좋은 습관)
     if (!mongoose.isObjectIdOrHexString(siteId)) { // mongoose.isObjectIdOrHexString를 사용하여 유효성 검사 강화
-        return next(new AppError('유효하지 않은 문화유산 ID입니다.', 400));
+        return next(new AppError('Not valid Id.', 400));
     }
 
     const pipeline = [
@@ -204,7 +135,7 @@ const getCulturalSiteById = asyncHandler(async (req, res, next) => {
                 as: 'reviewsData' // 조인된 리뷰 데이터가 저장될 임시 필드
             }
         },
-        // Populate처럼 reviewsData 내의 user 정보도 가져오려면 추가 $lookup 필요
+         // 리뷰 데이터 배열을 개별 문서로 분리합니다. 리뷰가 없어도 문화유산 문서가 유지되도록 합니다.
         {
             $unwind: {
                 path: '$reviewsData',
@@ -316,7 +247,7 @@ const getCulturalSiteById = asyncHandler(async (req, res, next) => {
             }
         },
         {
-            $project: {
+            $project: { // 최종 결과 문서에 포함될 필드들을 선택.
                 name: 1,
                 description: 1,
                 category: 1,
@@ -379,7 +310,7 @@ const getCulturalSiteById = asyncHandler(async (req, res, next) => {
 const updateCulturalSiteById = asyncHandler(async (req, res, next) => {
     // 1. 관리자 권한 확인
     if (!req.user || req.user.role !== 'admin') {
-        return next(new AppError('문화유산을 수정할 권한이 없습니다. 관리자만 가능합니다.', 403));
+        return next(new AppError('You do not have permission to edit cultural heritage. Only administrators can do so.', 403));
     }
 
     // 2. 수정 허용된 필드만 추출하여 updateData 구성
@@ -394,20 +325,20 @@ const updateCulturalSiteById = asyncHandler(async (req, res, next) => {
     // 3. 각 필드에 대한 추가 유효성 검사 (Mongoose Validator 외에 여기서 미리 처리할 수도 있습니다.)
     // 예: category 필드가 CULTURAL_CATEGORY enum에 있는지 수동 검사
     if (updateData.category && !CULTURAL_CATEGORY.includes(updateData.category)) {
-        return next(new AppError(`유효하지 않은 카테고리 값입니다: ${updateData.category}`, 400));
+        return next(new AppError(`Invalid category value: ${updateData.category}`, 400));
     }
     // name 필드의 길이 검사 (Mongoose validator가 있지만, 클라이언트에게 더 빠른 피드백을 줄 수 있음)
     if (updateData.name && (updateData.name.length < 2 || updateData.name.length > 100)) {
-        return next(new AppError('이름은 최소 2자에서 최대 100자 사이여야 합니다.', 400));
+        return next(new AppError('Name must be between 2 and 100 characters long.', 400));
     }
     // description 필드의 길이 검사
     if (updateData.description && updateData.description.length > 1000) {
-        return next(new AppError('설명은 최대 1000자를 초과할 수 없습니다.', 400));
+        return next(new AppError('Description cannot exceed 1000 characters.', 400));
     }
 
     // 4. 업데이트할 필드가 없는 경우
     if (Object.keys(updateData).length === 0) {
-        return next(new AppError('업데이트할 필드가 제공되지 않았거나 유효하지 않습니다.', 400));
+        return next(new AppError('The field to be updated is not provided or is invalid.', 400));
     }
 
     // 5. CulturalSite 문서 업데이트
@@ -422,13 +353,13 @@ const updateCulturalSiteById = asyncHandler(async (req, res, next) => {
 
     // 6. 문서가 존재하지 않는 경우 처리
     if (!culturalSite) {
-        return next(new AppError('해당 ID를 가진 문화유산을 찾을 수 없습니다.', 404));
+        return next(new AppError('No cultural heritage with that ID found.', 404));
     }
 
     // 7. 성공 응답 반환
     res.status(200).json({
         status: 'success',
-        message: '문화유산 정보가 성공적으로 업데이트되었습니다.',
+        message: 'Cultural heritage information has been successfully updated.',
         data: {
             culturalSite // 업데이트된 문화유산 정보를 응답
         }
@@ -513,7 +444,7 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
 
     // 1. 위/경도 유효성 검사
     if (!isValidLatLng(lon, lat)) {
-        return next(new AppError('유효한 위도(lat)와 경도(lon) 쿼리 파라미터가 필요합니다.', 400));
+        return next(new AppError('Effective latitude and longitude query parameters are required.', 400));
     }
 
     const parsedLat = parseFloat(lat);
@@ -523,10 +454,10 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
     // 2. Chemnitz 시 경계 내부 확인 (선택 사항)
     try {
         if (!isPointInChemnitz(parsedLat, parsedLon)) {
-            return next(new AppError('입력된 위치가 Chemnitz 시 경계 내부에 있지 않아 주변 OSM 문화유산을 검색할 수 없습니다.', 400));
+            return next(new AppError('Since the input location is not inside the boundary when Chemnitz, the surrounding OSM cultural heritage cannot be searched.', 400));
         }
     } catch (error) {
-        return next(new AppError(`위치 유효성 검사 중 오류 발생: ${error.message}`, 500));
+        return next(new AppError(`Error occurs during location validation: ${error.message}`, 500));
     }
 
     // 3. Overpass 쿼리 생성
@@ -537,7 +468,7 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
     try {
         osmData = await queryOverpass(overpassQuery);
     } catch (error) {
-        return next(new AppError(`주변 OSM 문화유산 정보를 가져오는 데 실패했습니다: ${error.message}`, 500));
+        return next(new AppError(`Failed to bring about the surrounding OSM cultural site information: ${error.message}`, 500));
     }
 
     const osmElements = osmData.elements || [];
@@ -552,7 +483,7 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
             site !== null && !site.name.startsWith("Unnamed Site (ID:")
         );
     } catch (error) {
-        return next(new AppError(`문화유산 데이터 처리 중 오류 발생: ${error.message}`, 500));
+        return next(new AppError(`Errors occur during cultural heritage data processing: ${error.message}`, 500));
     }
 
     // 5. Filter out sites already in your CulturalSite DB ---
@@ -567,7 +498,7 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
                 sourceId: { $in: osmSourceIds }
             }).select('sourceId'); // sourceId만 가져와서 효율성을 높입니다.
         } catch (error) {
-            return next(new AppError(`기존 문화재 정보 조회 중 오류 발생: ${error.message}`, 500));
+            return next(new AppError(`Errors occur during existing cultural site information request: ${error.message}`, 500));
         }
     }
 
@@ -587,37 +518,6 @@ const getNearbyOsmCulturalSites = asyncHandler(async (req, res, next) => {
             osmCulturalSites: uniqueProcessedSites
         }
     });
-});
-
-/**
- * 클라이언트로부터 받은 OSM element 원본 객체를 CulturalSite 스키마 형식으로 가공하여 반환.
- * POST /api/v1/cultural-sites/process-osm
- * Request Body (POST): { ... OSM element object ... }
- * Response: { status: 'success', data: { culturalSitePreview: { ... 가공된 데이터 ... } } }
- */
-const processAndPreviewOsmCulturalSite = asyncHandler(async (req, res, next) => {
-    const osmElement = req.body;
-
-    try {
-        // 분리된 유틸리티 함수를 호출하여 데이터 가공
-        const culturalSitePreview = await processOsmElementForCulturalSite(osmElement); // [cite: 67, 68, 70, 124, 125, 126]
-        // 이 단계에서는 Chemnitz 경계, sourceId 중복/제외 검사는 하지 않습니다.
-        // 이 검사들은 DB 저장 단계에서 하는 것이 적절합니다.
-
-        res.status(200).json({
-            status: 'success',
-            message: 'OSM 데이터가 CulturalSite 형식으로 성공적으로 가공되었습니다. 미리보기를 확인하세요.',
-            data: {
-                culturalSitePreview
-            }
-        });
-    } catch (error) {
-        if (error instanceof AppError) {
-            return next(error);
-        }
-        console.error('Error processing OSM data:', error);
-        return next(new AppError(`OSM 데이터 가공 중 오류 발생: ${error.message}`, 500));
-    }
 });
 
 /**
@@ -695,7 +595,6 @@ const saveCulturalSiteToDb = asyncHandler(async (req, res, next) => {
 module.exports = {
     getAllCulturalSites,
     getCulturalSiteById,
-    processAndPreviewOsmCulturalSite,
     saveCulturalSiteToDb,
     updateCulturalSiteById,
     deleteCulturalSiteById,

@@ -4,7 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-// 3. 서드파티 미들웨어 (Alphabetical order is often good)
+// 3. 서드파티 미들웨어 
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
@@ -35,12 +35,10 @@ const cron = require('node-cron');
 const { overpassUpdater } = require('./services/overpassService')
 
 // Swagger 관련 패키지
+const path = require('path');
+const YAML = require('yamljs');
 const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
-const swaggerOptions = require('./config/swaggerDef'); // 위에서 생성한 swaggerDef.js 파일 import
 
-// Swagger JSDoc 초기화
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 
 const app = express();
@@ -49,9 +47,9 @@ const MONGO_URI = process.env.MONGO_URI;
 const PORT = process.env.PORT || 5000;
 
 
-// API 속도 제한 (동일 IP에서 1시간 동안 100회 요청으로 제한)
+// API 속도 제한 (동일 IP에서 1시간 동안 1000회 요청으로 제한)
 const limiter = rateLimit({
-  max: 100,
+  max: 1000,
   windowMs: 60 * 60 * 1000,
   message: 'Too many request on this ip.',
 });
@@ -78,8 +76,8 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/proposals', proposalRoutes);
 
 // Swagger UI 라우트 추가
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+const swaggerDocument = YAML.load(path.join(__dirname, 'public/openapi.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', (req, res) => {
   res.send('Message from the server: Server is Running!');
@@ -117,7 +115,7 @@ mongoose.connect(MONGO_URI)
       }
     }, {
       scheduled: true, // 스케줄을 즉시 활성화합니다.
-      timezone: "Europe/Berlin" // Chemnitz는 베를린 시간대이므로 명시적으로 지정합니다. 필요에 따라 변경하세요.
+      timezone: "Europe/Berlin" // Chemnitz는 베를린 시간대이므로 명시적으로 지정합니다. 필요에 따라 변경.
     });
     console.log('Overpass data update scheduled for every Sunday 00:00.');
 

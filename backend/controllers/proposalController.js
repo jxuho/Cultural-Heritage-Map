@@ -1,5 +1,3 @@
-// backend/controllers/proposalController.js
-
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const Proposal = require('../models/Proposal');
@@ -15,214 +13,11 @@ const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const User = require('../models/User');
 
-// const createProposal = asyncHandler(async (req, res, next) => {
-//     const { proposalType, proposalMessage, ...rawData } = req.body;
-//     if (!proposalType) {
-//         return next(new AppError('제안 유형(proposalType)은 필수입니다.', 400));
-//     }
-
-//     let newProposal;
-
-//     switch (proposalType) {
-//         case 'create':
-//             const proposedSourceId = rawData.sourceId;
-//             if (!proposedSourceId) {
-//                 return next(new AppError('새로운 문화유산 제안 시 sourceId는 필수입니다. (예: node/12345, way/56789)', 400));
-//             }
-
-//             const sourceIdParts = proposedSourceId.split('/');
-//             if (sourceIdParts.length !== 2 || (sourceIdParts[0] !== 'node' && sourceIdParts[0] !== 'way' &&
-//                 sourceIdParts[0] !== 'relation') || isNaN(parseInt(sourceIdParts[1]))) {
-//                 return next(new AppError('유효하지 않은 sourceId 형식입니다. (예: node/12345, way/56789, relation/123)', 400));
-//             }
-//             const osmType = sourceIdParts[0];
-//             const osmId = parseInt(sourceIdParts[1]);
-
-//             const existingCulturalSite = await CulturalSite.findOne({ sourceId: proposedSourceId });
-//             if (existingCulturalSite) {
-//                 return next(new AppError(`해당 sourceId (${proposedSourceId})를 가진 문화유산은 이미 등록되어 있습니다. 수정 제안을 사용해주세요.`, 409));
-//             }
-
-//             let actualOsmElement;
-//             let actualSourceId;
-//             let actualLocation;
-
-//             try {
-//                 // Overpass API 쿼리에 'out geom;' 또는 'out center;' 포함 여부 확인
-//                 // queryOverpass 함수가 'geom'을 요청하도록 설정되어 있어야 way의 노드 좌표를 받음
-//                 const osmResponse = await queryOverpass(singleElementQuery(osmType, osmId));
-//                 actualOsmElement = osmResponse.elements[0];
-
-//                 if (!actualOsmElement) {
-//                     return next(new AppError(`제안된 OSM ID (${proposedSourceId})에 해당하는 요소를 Overpass API에서 찾을 수 없습니다.`, 404));
-//                 }
-
-//                 actualSourceId = `${actualOsmElement.type}/${actualOsmElement.id}`;
-//                 // processOsmElementForCulturalSite 함수가 way/relation의 경우 중심점 (Point)이 아닌
-//                 // LineString/Polygon 또는 노드 배열을 반환하도록 수정 고려
-//                 const processedFromOsm = await processOsmElementForCulturalSite(actualOsmElement);
-//                 actualLocation = processedFromOsm.location; // 이것이 Point 타입으로 변환될 것임 [cite: 14]
-
-//                 if (proposedSourceId !== actualSourceId) {
-//                     console.warn(`Client provided sourceId mismatch: Expected ${actualSourceId}, Got ${proposedSourceId}`);
-//                     return next(new AppError('제공된 sourceId가 실제 OSM 데이터와 일치하지 않습니다.', 400));
-//                 }
-
-//                 if (!rawData.location) {
-//                     return next(new AppError('새로운 문화유산 제안 시 유효한 위치 정보(location)는 필수입니다.', 400));
-//                 }
-//                 if (rawData.location.type !== 'Point' || rawData.location.coordinates.length !== 2 || !isValidLatLng(rawData.location.coordinates[0], rawData.location.coordinates[1])) {
-//                     return next(new AppError('제공된 위치 정보(location) 형식이 유효하지 않습니다.', 400));
-//                 }
-//                 if (!isPointInChemnitz(rawData.location.coordinates[1], rawData.location.coordinates[0])) {
-//                     return next(new AppError('제공된 위치 정보(location)가 Chemnitz를 벗어납니다.', 400));
-//                 }
-
-//                 const clientCoord = [rawData.location.coordinates[0], rawData.location.coordinates[1]];
-//                 const osmCoord = [actualLocation.coordinates[0], actualLocation.coordinates[1]];
-
-
-//                 if (!areCoordinatesMatching(clientCoord, osmCoord)) {
-//                     return next(new AppError('제공된 위치 정보가 실제 OSM 노드와 일치하지 않습니다. 지도의 정확한 위치를 선택해주세요.', 400));
-//                 }
-
-
-//             } catch (error) {
-//                 console.error('제안 생성 중 Overpass API에서 OSM 데이터를 가져오거나 처리하는 중 오류 발생:', error);
-//                 if (error.response) {
-//                     console.error('Overpass API Response Error:', error.response.status, error.response.data);
-//                     return next(new AppError(`OSM API 오류: ${error.response.status} - ${JSON.stringify(error.response.data)}`, error.response.status));
-//                 }
-//                 return next(new AppError(`OSM 데이터를 가져오거나 처리하는 중 알 수 없는 오류 발생: ${error.message}`, 500));
-//             }
-
-//             const proposedChangesForCreate = processOsmElementForCulturalSite(actualOsmElement);
-//             for (const field of CULTURAL_SITE_UPDATABLE_FIELDS)
-//                 if (rawData[field] !== undefined) {
-//                     proposedChangesForCreate[field] = rawData[field];
-//                 }
-
-//             // 서버에서 검증된 필수 필드들을 proposedChangesForCreate에 직접 추가
-//             proposedChangesForCreate.sourceId = actualSourceId;
-//             proposedChangesForCreate.location = actualLocation;
-//             proposedChangesForCreate.originalTags = actualOsmElement.tags;
-
-//             if (proposedChangesForCreate.category && !CULTURAL_CATEGORY.includes(proposedChangesForCreate.category)) {
-//                 return next(new AppError(`유효하지 않은 카테고리 값입니다: ${proposedChangesForCreate.category}`, 400));
-//             }
-
-//             newProposal = await Proposal.create({
-//                 proposedBy: req.user.id,
-//                 proposalType: 'create',
-//                 proposedChanges: proposedChangesForCreate,
-//                 proposalMessage: proposalMessage,
-//                 status: 'pending'
-//             });
-//             break;
-
-//         case 'update':
-//             const culturalSiteIdForUpdate = rawData.culturalSite;
-//             if (!culturalSiteIdForUpdate) {
-//                 return next(new AppError('수정할 문화유산의 ID(culturalSite)는 필수입니다.', 400));
-//             }
-
-//             const culturalSiteToUpdate = await CulturalSite.findById(culturalSiteIdForUpdate);
-//             if (!culturalSiteToUpdate) {
-//                 return next(new AppError('수정할 문화유산을 찾을 수 없습니다.', 404));
-//             }
-
-//             const proposedChangesForUpdate = {};
-//             for (const field of CULTURAL_SITE_UPDATABLE_FIELDS) {
-//                 if (rawData[field] !== undefined) {
-//                     if (JSON.stringify(culturalSiteToUpdate[field]) !== JSON.stringify(rawData[field])) {
-//                         proposedChangesForUpdate[field] = {
-//                             oldValue: culturalSiteToUpdate[field],
-//                             newValue: rawData[field]
-//                         };
-//                     }
-//                 }
-//             }
-
-//             if (Object.keys(proposedChangesForUpdate).length === 0) {
-//                 return next(new AppError('수정 제안을 위해 유효한 변경 사항이 필요합니다. (기존 값과 다른 값을 제공해주세요)', 400));
-//             }
-
-//             if (proposedChangesForUpdate.category && proposedChangesForUpdate.category.newValue && !CULTURAL_CATEGORY.includes(proposedChangesForUpdate.category.newValue)) {
-//                 return next(new AppError(`유효하지 않은 카테고리 값입니다: ${proposedChangesForUpdate.category.newValue}`, 400));
-//             }
-
-//             const existingUpdateProposal = await Proposal.findOne({
-//                 culturalSite: culturalSiteIdForUpdate,
-//                 proposalType: 'update',
-//                 status: 'pending'
-//             });
-//             if (existingUpdateProposal) {
-//                 return next(new AppError('이미 이 문화유산에 대한 수정 제안이 제출되어 검토 대기 중입니다.', 409));
-//             }
-
-//             newProposal = await Proposal.create({
-//                 culturalSite: culturalSiteIdForUpdate,
-//                 proposedBy: req.user.id,
-//                 proposalType: 'update',
-//                 proposedChanges: proposedChangesForUpdate,
-//                 proposalMessage: proposalMessage,
-//                 status: 'pending'
-//             });
-//             break;
-
-//         case 'delete':
-//             const culturalSiteIdForDelete = rawData.culturalSite;
-//             if (!culturalSiteIdForDelete) {
-//                 return next(new AppError('삭제할 문화유산의 ID(culturalSite)는 필수입니다.', 400));
-//             }
-
-//             const culturalSiteToDelete = await CulturalSite.findById(culturalSiteIdForDelete);
-//             if (!culturalSiteToDelete) {
-//                 return next(new AppError('삭제할 문화유산을 찾을 수 없습니다.', 404));
-//             }
-
-//             const existingDeleteProposal = await Proposal.findOne({
-//                 culturalSite: culturalSiteIdForDelete,
-//                 proposalType: 'delete',
-//                 status: 'pending'
-//             });
-//             if (existingDeleteProposal) {
-//                 return next(new AppError('이미 이 문화유산에 대한 삭제 제안이 제출되어 검토 대기 중입니다.', 409));
-//             }
-
-//             newProposal = await Proposal.create({
-//                 culturalSite: culturalSiteIdForDelete,
-//                 proposedBy: req.user.id,
-//                 proposalType: 'delete',
-//                 proposedChanges: {},
-//                 proposalMessage: proposalMessage,
-//                 status: 'pending'
-//             });
-//             break;
-
-//         default:
-//             return next(new AppError('알 수 없는 제안 유형입니다.', 400));
-//     }
-
-//     res.status(201).json({
-//         status: 'success',
-//         message: '제안이 성공적으로 제출되었습니다.',
-//         data: {
-//             proposal: newProposal
-//         }
-//     });
-// });
-
-
-
-// --- 관리자 역할 (Admin) ---
-
-// 1. 모든 제안 조회
-
+// Create Proposal by User
 const createProposal = asyncHandler(async (req, res, next) => {
     const { proposalType, proposalMessage, ...rawData } = req.body;
     if (!proposalType) {
-        return next(new AppError('제안 유형(proposalType)은 필수입니다.', 400));
+        return next(new AppError('Proposal type (proposalType) is required.', 400));
     }
 
     let newProposal;
@@ -234,7 +29,7 @@ const createProposal = asyncHandler(async (req, res, next) => {
     if (proposalType === 'update' || proposalType === 'delete') {
         const culturalSiteId = rawData.culturalSite;
         if (!culturalSiteId) {
-            return next(new AppError('문화유산 ID(culturalSite)는 필수입니다.', 400));
+            return next(new AppError('Cultural site ID (culturalSite) is required.', 400));
         }
 
         const existingPendingProposal = await Proposal.findOne({
@@ -244,17 +39,17 @@ const createProposal = asyncHandler(async (req, res, next) => {
         });
 
         if (existingPendingProposal) {
-            let message = '이미 이 문화유산에 대한 ';
+            let message = 'A ';
             if (existingPendingProposal.proposalType === 'update') {
-                message += '수정 제안이';
+                message += 'modification proposal';
             } else if (existingPendingProposal.proposalType === 'delete') {
-                message += '삭제 제안이';
+                message += 'deletion proposal';
             } else if (existingPendingProposal.proposalType === 'create') {
                 // This case should ideally not be hit if culturalSiteId is present,
                 // but good to cover.
-                message += '생성 제안이';
+                message += 'creation proposal';
             }
-            message += ' 제출되어 검토 대기 중입니다.';
+            message += ' for this cultural site has already been submitted and is pending review.';
             return next(new AppError(message, 409));
         }
     }
@@ -263,20 +58,20 @@ const createProposal = asyncHandler(async (req, res, next) => {
         case 'create':
             const proposedSourceId = rawData.sourceId;
             if (!proposedSourceId) {
-                return next(new AppError('새로운 문화유산 제안 시 sourceId는 필수입니다. (예: node/12345, way/56789)', 400));
+                return next(new AppError('sourceId is required when proposing a new cultural site. (e.g., node/12345, way/56789)', 400));
             }
 
             const sourceIdParts = proposedSourceId.split('/');
             if (sourceIdParts.length !== 2 || (sourceIdParts[0] !== 'node' && sourceIdParts[0] !== 'way' &&
                 sourceIdParts[0] !== 'relation') || isNaN(parseInt(sourceIdParts[1]))) {
-                return next(new AppError('유효하지 않은 sourceId 형식입니다. (예: node/12345, way/56789, relation/123)', 400));
+                return next(new AppError('Invalid sourceId format. (e.g., node/12345, way/56789, relation/123)', 400));
             }
             const osmType = sourceIdParts[0];
             const osmId = parseInt(sourceIdParts[1]);
 
             const existingCulturalSite = await CulturalSite.findOne({ sourceId: proposedSourceId });
             if (existingCulturalSite) {
-                return next(new AppError(`해당 sourceId (${proposedSourceId})를 가진 문화유산은 이미 등록되어 있습니다. 수정 제안을 사용해주세요.`, 409));
+                return next(new AppError(`A cultural site with sourceId (${proposedSourceId}) is already registered. Please use a modification proposal.`, 409));
             }
 
             // Specific check for existing pending 'create' proposal for the same sourceId by the same user
@@ -288,7 +83,7 @@ const createProposal = asyncHandler(async (req, res, next) => {
                 status: 'pending'
             });
             if (existingCreateProposal) {
-                return next(new AppError('이미 이 OSM ID에 대한 생성 제안이 제출되어 검토 대기 중입니다.', 409));
+                return next(new AppError('A creation proposal for this OSM ID has already been submitted and is pending review.', 409));
             }
 
             let actualOsmElement;
@@ -300,7 +95,7 @@ const createProposal = asyncHandler(async (req, res, next) => {
                 actualOsmElement = osmResponse.elements[0];
 
                 if (!actualOsmElement) {
-                    return next(new AppError(`제안된 OSM ID (${proposedSourceId})에 해당하는 요소를 Overpass API에서 찾을 수 없습니다.`, 404));
+                    return next(new AppError(`No element corresponding to the proposed OSM ID (${proposedSourceId}) could be found in Overpass API.`, 404));
                 }
 
                 actualSourceId = `${actualOsmElement.type}/${actualOsmElement.id}`;
@@ -309,33 +104,33 @@ const createProposal = asyncHandler(async (req, res, next) => {
 
                 if (proposedSourceId !== actualSourceId) {
                     console.warn(`Client provided sourceId mismatch: Expected ${actualSourceId}, Got ${proposedSourceId}`);
-                    return next(new AppError('제공된 sourceId가 실제 OSM 데이터와 일치하지 않습니다.', 400));
+                    return next(new AppError('The provided sourceId does not match the actual OSM data.', 400));
                 }
 
                 if (!rawData.location) {
-                    return next(new AppError('새로운 문화유산 제안 시 유효한 위치 정보(location)는 필수입니다.', 400));
+                    return next(new AppError('Valid location information (location) is required when proposing a new cultural site.', 400));
                 }
                 if (rawData.location.type !== 'Point' || rawData.location.coordinates.length !== 2 || !isValidLatLng(rawData.location.coordinates[0], rawData.location.coordinates[1])) {
-                    return next(new AppError('제공된 위치 정보(location) 형식이 유효하지 않습니다.', 400));
+                    return next(new AppError('The provided location information (location) format is invalid.', 400));
                 }
                 if (!isPointInChemnitz(rawData.location.coordinates[1], rawData.location.coordinates[0])) {
-                    return next(new AppError('제공된 위치 정보(location)가 Chemnitz를 벗어납니다.', 400));
+                    return next(new AppError('The provided location information (location) is outside Chemnitz.', 400));
                 }
 
                 const clientCoord = [rawData.location.coordinates[0], rawData.location.coordinates[1]];
                 const osmCoord = [actualLocation.coordinates[0], actualLocation.coordinates[1]];
 
                 if (!areCoordinatesMatching(clientCoord, osmCoord)) {
-                    return next(new AppError('제공된 위치 정보가 실제 OSM 노드와 일치하지 않습니다. 지도의 정확한 위치를 선택해주세요.', 400));
+                    return next(new AppError('The provided location information does not match the actual OSM node. Please select the exact location on the map.', 400));
                 }
 
             } catch (error) {
-                console.error('제안 생성 중 Overpass API에서 OSM 데이터를 가져오거나 처리하는 중 오류 발생:', error);
+                console.error('Error fetching or processing OSM data during proposal creation:', error);
                 if (error.response) {
                     console.error('Overpass API Response Error:', error.response.status, error.response.data);
-                    return next(new AppError(`OSM API 오류: ${error.response.status} - ${JSON.stringify(error.response.data)}`, error.response.status));
+                    return next(new AppError(`OSM API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`, error.response.status));
                 }
-                return next(new AppError(`OSM 데이터를 가져오거나 처리하는 중 알 수 없는 오류 발생: ${error.message}`, 500));
+                return next(new AppError(`Unknown error fetching or processing OSM data: ${error.message}`, 500));
             }
 
             const proposedChangesForCreate = processOsmElementForCulturalSite(actualOsmElement);
@@ -349,7 +144,7 @@ const createProposal = asyncHandler(async (req, res, next) => {
             proposedChangesForCreate.originalTags = actualOsmElement.tags;
 
             if (proposedChangesForCreate.category && !CULTURAL_CATEGORY.includes(proposedChangesForCreate.category)) {
-                return next(new AppError(`유효하지 않은 카테고리 값입니다: ${proposedChangesForCreate.category}`, 400));
+                return next(new AppError(`Invalid category value: ${proposedChangesForCreate.category}`, 400));
             }
 
             newProposal = await Proposal.create({
@@ -366,7 +161,7 @@ const createProposal = asyncHandler(async (req, res, next) => {
             // No need for individual `existingUpdateProposal` check here, as it's covered by the universal check above.
             const culturalSiteToUpdate = await CulturalSite.findById(culturalSiteIdForUpdate);
             if (!culturalSiteToUpdate) {
-                return next(new AppError('수정할 문화유산을 찾을 수 없습니다.', 404));
+                return next(new AppError('Cultural site to modify not found.', 404));
             }
 
             const proposedChangesForUpdate = {};
@@ -382,11 +177,11 @@ const createProposal = asyncHandler(async (req, res, next) => {
             }
 
             if (Object.keys(proposedChangesForUpdate).length === 0) {
-                return next(new AppError('수정 제안을 위해 유효한 변경 사항이 필요합니다. (기존 값과 다른 값을 제공해주세요)', 400));
+                return next(new AppError('Valid changes are required for a modification proposal. (Please provide values different from existing ones)', 400));
             }
 
             if (proposedChangesForUpdate.category && proposedChangesForUpdate.category.newValue && !CULTURAL_CATEGORY.includes(proposedChangesForUpdate.category.newValue)) {
-                return next(new AppError(`유효하지 않은 카테고리 값입니다: ${proposedChangesForUpdate.category.newValue}`, 400));
+                return next(new AppError(`Invalid category value: ${proposedChangesForUpdate.category.newValue}`, 400));
             }
 
             newProposal = await Proposal.create({
@@ -404,7 +199,7 @@ const createProposal = asyncHandler(async (req, res, next) => {
             // No need for individual `existingDeleteProposal` check here, as it's covered by the universal check above.
             const culturalSiteToDelete = await CulturalSite.findById(culturalSiteIdForDelete);
             if (!culturalSiteToDelete) {
-                return next(new AppError('삭제할 문화유산을 찾을 수 없습니다.', 404));
+                return next(new AppError('Cultural site to delete not found.', 404));
             }
 
             newProposal = await Proposal.create({
@@ -418,12 +213,12 @@ const createProposal = asyncHandler(async (req, res, next) => {
             break;
 
         default:
-            return next(new AppError('알 수 없는 제안 유형입니다.', 400));
+            return next(new AppError('Unknown proposal type.', 400));
     }
 
     res.status(201).json({
         status: 'success',
-        message: '제안이 성공적으로 제출되었습니다.',
+        message: 'Proposal successfully submitted.',
         data: {
             proposal: newProposal
         }
@@ -447,7 +242,6 @@ const getProposalsByUserId = asyncHandler(async (req, res, next) => {
         }
     });
 });
-
 
 // 모든 proposals 조회
 const getAllProposals = asyncHandler(async (req, res, next) => {
@@ -474,7 +268,7 @@ const getAllProposals = asyncHandler(async (req, res, next) => {
     });
 });
 
-// 2. 특정 제안 상세 조회
+// 특정 제안 상세 조회
 const getProposalById = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
     const proposal = await Proposal.findById(id)
@@ -483,7 +277,7 @@ const getProposalById = asyncHandler(async (req, res, next) => {
         .populate('reviewedBy', 'name email');
 
     if (!proposal) {
-        return next(new AppError('해당 ID를 가진 제안을 찾을 수 없습니다.', 404));
+        return next(new AppError('No proposal found with that ID.', 404));
     }
 
     res.status(200).json({
@@ -494,11 +288,10 @@ const getProposalById = asyncHandler(async (req, res, next) => {
     });
 });
 
-
-// 3. 제안 수락
+// 제안 수락
 const acceptProposal = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
-    const { adminComment } = req.body; 
+    const { adminComment } = req.body;
 
     // 트랜잭션 시작
     const session = await mongoose.startSession();
@@ -508,11 +301,11 @@ const acceptProposal = asyncHandler(async (req, res, next) => {
         const proposal = await Proposal.findById(id).session(session);
 
         if (!proposal) {
-            return next(new AppError('제안을 찾을 수 없습니다.', 404));
+            return next(new AppError('Proposal not found.', 404));
         }
 
         if (proposal.status !== 'pending') {
-            return next(new AppError('이미 처리된 제안입니다.', 400));
+            return next(new AppError('This proposal has already been processed.', 400));
         }
 
         let culturalSite;
@@ -528,7 +321,7 @@ const acceptProposal = asyncHandler(async (req, res, next) => {
                 };
 
                 if (!newCulturalSiteData.name || !newCulturalSiteData.category || !newCulturalSiteData.location || !newCulturalSiteData.sourceId) {
-                    throw new AppError('새로운 문화유산 생성에 필요한 필수 정보가 누락되었습니다.', 400);
+                    throw new AppError('Missing required information for creating a new cultural site.', 400);
                 }
 
                 culturalSite = await CulturalSite.create([newCulturalSiteData], { session });
@@ -537,7 +330,7 @@ const acceptProposal = asyncHandler(async (req, res, next) => {
             case 'update':
                 culturalSite = await CulturalSite.findById(proposal.culturalSite).session(session);
                 if (!culturalSite) {
-                    throw new AppError('수정 대상 문화유산을 찾을 수 없습니다.', 404);
+                    throw new AppError('Target cultural site for modification not found.', 404);
                 }
 
                 const updateData = {};
@@ -554,7 +347,7 @@ const acceptProposal = asyncHandler(async (req, res, next) => {
             case 'delete':
                 originalCulturalSite = await CulturalSite.findById(proposal.culturalSite).session(session);
                 if (!originalCulturalSite) {
-                    console.warn(`삭제 대상 문화유산 ${proposal.culturalSite}를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.`);
+                    console.warn(`Cultural site to delete ${proposal.culturalSite} not found. It might have been deleted already.`);
                 } else {
                     // 1. Delete associated reviews (already correct based on previous understanding)
                     await Review.deleteMany({ culturalSite: originalCulturalSite._id }).session(session);
@@ -577,17 +370,17 @@ const acceptProposal = asyncHandler(async (req, res, next) => {
                 if (originalCulturalSite && originalCulturalSite.sourceId) {
                     await ExcludeSourceId.findOneAndUpdate(
                         { sourceId: originalCulturalSite.sourceId },
-                        { sourceId: originalCulturalSite.sourceId, reason: '사용자 제안에 의해 삭제됨' },
+                        { sourceId: originalCulturalSite.sourceId, reason: 'Deleted by user proposal' },
                         { upsert: true, new: true, session }
                     );
                     console.log(`SourceId ${originalCulturalSite.sourceId} added to ExcludeSourceId collection.`);
                 } else {
-                    console.warn(`삭제된 문화유산의 sourceId를 ExcludeSourceId에 추가할 수 없습니다. proposal.culturalSite: ${proposal.culturalSite}`);
+                    console.warn(`Could not add sourceId to ExcludeSourceId for deleted cultural site. proposal.culturalSite: ${proposal.culturalSite}`);
                 }
 
                 break;
             default:
-                throw new AppError('알 수 없는 제안 유형입니다.', 400);
+                throw new AppError('Unknown proposal type.', 400);
         }
 
         // 제안 상태 업데이트
@@ -602,7 +395,7 @@ const acceptProposal = asyncHandler(async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            message: '제안이 성공적으로 수락되었습니다.',
+            message: 'Proposal successfully accepted.',
             data: {
                 proposal,
                 culturalSite
@@ -612,12 +405,12 @@ const acceptProposal = asyncHandler(async (req, res, next) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-        console.error('제안 수락 중 트랜잭션 오류 발생:', error);
-        return next(error instanceof AppError ? error : new AppError(`제안 수락 중 오류 발생: ${error.message}`, 500));
+        console.error('Transaction error during proposal acceptance:', error);
+        return next(error instanceof AppError ? error : new AppError(`Error accepting proposal: ${error.message}`, 500));
     }
 });
 
-// 4. 제안 거절
+// 제안 거절
 const rejectProposal = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
     const { adminComment } = req.body; // 관리자의 거절 사유
@@ -625,21 +418,21 @@ const rejectProposal = asyncHandler(async (req, res, next) => {
     const proposal = await Proposal.findById(id);
 
     if (!proposal) {
-        return next(new AppError('해당 ID를 가진 제안을 찾을 수 없습니다.', 404));
+        return next(new AppError('No proposal found with that ID.', 404));
     }
     if (proposal.status !== 'pending') {
-        return next(new AppError('이 제안은 이미 검토되었습니다.', 400));
+        return next(new AppError('This proposal has already been reviewed.', 400));
     }
 
     proposal.status = 'rejected';
     proposal.reviewedBy = req.user.id;
     proposal.reviewedAt = Date.now();
-    proposal.adminComment = adminComment || '제안이 거절되었습니다.';
+    proposal.adminComment = adminComment || 'Proposal rejected.';
     await proposal.save();
 
     res.status(200).json({
         status: 'success',
-        message: '제안이 성공적으로 거절되었습니다.',
+        message: 'Proposal successfully rejected.',
         data: {
             proposal
         }

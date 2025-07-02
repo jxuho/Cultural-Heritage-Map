@@ -38,9 +38,6 @@ const determineCulturalSiteName = (tags, sourceId) => {
  */
 const determineCulturalSiteDescription = (tags, name) => {
     let description = tags.description || tags.note || tags.long_description || '';
-    // if (!description && name) {
-    //     description = name;
-    // }
     return description;
 };
 
@@ -219,7 +216,7 @@ const processOsmElementForCulturalSite = async (osmElement, performReverseGeocod
     // 어떤 위치 정보도 찾지 못했을 경우의 디버그 로그 및 에러
     if (!(typeof lat === 'number' && typeof lon === 'number')) {
         console.warn(`[DEBUG] Element ${sourceId} (type: ${type}) has no valid lat/lon, geometry, or bounds after all checks. Full element:`, JSON.stringify(osmElement, null, 2));
-        throw new AppError(`Element ${sourceId} (type: ${type})에서 유효한 위치 정보를 찾을 수 없습니다. (lat/lon, geometry, bounds 모두 없음)`, 400);
+        throw new AppError(`Could not find valid location information for element ${sourceId} (type: ${type}). (No lat/lon, geometry, bounds)`, 400);
     }
 
     // 3. 위/경도 유효성 검사
@@ -240,7 +237,7 @@ const processOsmElementForCulturalSite = async (osmElement, performReverseGeocod
 
     // 5. 필수 필드 최종 확인
     if (!name || !category || isNaN(parsedLat) || isNaN(parsedLon) || !sourceId) {
-        throw new AppError('필수 문화유산 정보(이름, 카테고리, 위치, sourceId)를 OSM 데이터에서 추출할 수 없습니다.', 400);
+        throw new AppError('Essential cultural heritage information (name, category, location, sourceId) cannot be extracted from OSM data.', 400);
     }
 
     return {

@@ -8,7 +8,7 @@ const {baseCulturalSiteQuery} = require('../config/osmData')
 const { queryOverpass } = require('../services/overpassService');
 
 async function fetchAndSaveCulturalSites() {
-    console.log('Overpass API에서 Chemnitz 문화유산 데이터 가져오기 시작...');
+    console.log('Starting to import Chemnitz cultural sites data from Overpass API...');
     const OVERPASS_QUERY = baseCulturalSiteQuery();
     try {
         const osmData = await queryOverpass(OVERPASS_QUERY);
@@ -23,18 +23,18 @@ async function fetchAndSaveCulturalSites() {
 
         fs.writeFile(filePath, JSON.stringify(osmData, null, 2), (err) => {
             if (err) {
-                console.error('파일 저장 중 오류 발생:', err);
+                console.error('An error occurred while saving the file:', err);
             } else {
-                console.log(`✨ OSM 데이터가 ${filePath}에 성공적으로 저장되었습니다.`);
-                console.log(`총 ${osmData.elements ? osmData.elements.length : 0}개의 문화유산을 가져왔습니다.`);
+                console.log(`OSM data was successfully saved to ${filePath}.`);
+                console.log(`A total of ${osmData.elements ? osmData.elements.length : 0} cultural sites were retrieved.`);
             }
         });
 
     } catch (error) {
-        console.error('❌ Overpass API 호출 중 오류 발생:', error.message);
+        console.error('Error occurred while calling Overpass API:', error.message);
         if (error.response) {
-            console.error('응답 상태 코드:', error.response.status);
-            console.error('응답 데이터:', error.response.data);
+            console.error('Response Status Code:', error.response.status);
+            console.error('Response data:', error.response.data);
         }
     }
 }

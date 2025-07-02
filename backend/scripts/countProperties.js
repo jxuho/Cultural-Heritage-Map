@@ -1,10 +1,11 @@
 /**
  * geojson파일의 properties 필드가 가지고 있는 필드의 종류와 개수를 카운트하는 함수.
+ * A function that counts the types and number of fields contained in the properties field of a geojson file.
  */
 const fs = require('fs');
 const path = require('path');
 
-const filePath = path.join(__dirname, '../data', 'chemnitz_cultural_sites.geojson');
+const filePath = path.join(__dirname, '../data', 'FILENAME.geojson');
 
 fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {

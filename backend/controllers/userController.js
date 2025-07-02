@@ -1,4 +1,3 @@
-// backend/controllers/userController.js (예시)
 require('dotenv').config();
 const User = require('../models/User');
 const Review = require('../models/Review')
@@ -9,32 +8,27 @@ const mongoose = require('mongoose')
 const asyncHandler = require('../utils/asyncHandler')
 
 
-// 내 정보 조회 (GET /api/v1/users/me)
+// 내 정보 조회 Get my information (GET /api/v1/users/me)
 const getMe = asyncHandler(async (req, res, next) => {
     // req.user는 인증 미들웨어(authController.protect)에서 설정한 현재 로그인 사용자 객체입니다.
     // 이 객체는 MongoDB에서 조회된 사용자 문서입니다.
     if (!req.user) {
-        return next(new AppError('로그인된 사용자를 찾을 수 없습니다.', 401));
+        return next(new AppError('Cannot find the user.', 401));
     }
 
     res.status(200).json({
         status: 'success',
         data: {
-            user: req.user // req.user는 이미 populate 되어 있거나 필요한 필드를 가지고 있을 것입니다.
+            user: req.user
         }
     });
 });
 
-// 내 정보 수정 (PATCH /api/v1/users/updateMe)
+// 내 정보 수정 Update my information (PATCH /api/v1/users/updateMe)
 const updateMe = asyncHandler(async (req, res, next) => {
-    // // 1. 비밀번호 관련 데이터가 요청 본문에 있다면 에러 발생 (Google OAuth2 사용 시)
-    // if (req.body.password || req.body.passwordConfirm) {
-    //     return next(new AppError('이메일/비밀번호 인증이 아니므로 비밀번호는 여기서 업데이트할 수 없습니다.', 400));
-    // }
-
-    // 2. 허용된 필드만 필터링 (사용자가 임의의 필드를 수정하는 것을 방지)
+    // 1. Allowed fields
     const filteredBody = {};
-    const allowedFields = ['username', 'profileImage', 'bio']; // 허용할 필드 지정
+    const allowedFields = ['username', 'profileImage', 'bio']; 
 
     Object.keys(req.body).forEach(key => {
         if (allowedFields.includes(key)) {
@@ -42,28 +36,27 @@ const updateMe = asyncHandler(async (req, res, next) => {
         }
     });
 
-    // 3. 사용자 정보 업데이트
-    // req.user.id는 인증 미들웨어에서 가져온 현재 로그인 사용자의 ID입니다.
+    // 2. Update User Info.
     const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
-        new: true, // 업데이트된 문서를 반환
-        runValidators: true // 모델 스키마의 유효성 검사 실행
+        new: true, // Returning updated doc.
+        runValidators: true // model schema validity check. 모델 스키마의 유효성 검사 실행
     });
 
     res.status(200).json({
         status: 'success',
-        message: '프로필이 성공적으로 업데이트되었습니다.',
+        message: 'Profile is updated successfully.',
         data: {
             user: updatedUser
         }
     });
 });
 
-// 내 계정 삭제 (DELETE /api/v1/users/deleteMe)
+// 내 계정 삭제 Delete my information (DELETE /api/v1/users/deleteMe)
 const deleteMe = asyncHandler(async (req, res, next) => {
     const userToDelete = await User.findById(req.user.id);
 
     if (!userToDelete) {
-        return next(new AppError('삭제할 사용자를 찾을 수 없습니다.', 404));
+        return next(new AppError('Cannot find the user.', 404));
     }
 
     const session = await mongoose.startSession();
@@ -73,7 +66,7 @@ const deleteMe = asyncHandler(async (req, res, next) => {
         const userId = userToDelete._id;
         const userFavoriteSites = userToDelete.favoriteSites;
 
-        // 1. 사용자 하드 삭제
+        // 1. 사용자 하드 삭제 User hard delete
         await User.findByIdAndDelete(userId, { session });
 
         // 2. 이 사용자가 proposedBy로 있는 CulturalSite 문서의 해당 필드 값을 null로 변경
@@ -139,23 +132,19 @@ const deleteMe = asyncHandler(async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            message: 'Logged out successfully'
+            message: 'User deletion success'
         });
-
-        // 클라이언트 (React, Vue, Angular 등)에서는 이 응답을 받은 후
-        // window.location.href = 'http://localhost:5000/'; // 또는 React Router의 history.push('/login')
-        // 와 같이 처리합니다.
 
     } catch (error) {
         await session.abortTransaction();
-        console.error('사용자 삭제 트랜잭션 실패:', error);
-        return next(new AppError('계정 삭제 중 오류가 발생했습니다. 다시 시도해주세요.', 500));
+        console.error('User delete transaction fail: ', error);
+        return next(new AppError('An error occured during delete the user. Please try again.', 500));
     } finally {
         session.endSession();
     }
 });
 
-// 사용자 가지고 오기(GET /api/v1/users/:userId)
+// 사용자 가지고 오기 Get the user by id (GET /api/v1/users/:userId)
 const getUserById = asyncHandler(async (req, res, next) => {
     const { userId } = req.params;
 
@@ -174,7 +163,7 @@ const getUserById = asyncHandler(async (req, res, next) => {
     });
 });
 
-// 모든 사용자 목록 조회 (GET /api/v1/users)
+// 모든 사용자 목록 조회 Get all users (GET /api/v1/users)
 const getAllUsers = asyncHandler(async (req, res, next) => {
   const users = await User.find();
 
@@ -195,23 +184,23 @@ const addFavoriteSite = asyncHandler(async (req, res, next) => {
     const { siteId } = req.params;
 
     if (!siteId) {
-        return next(new AppError('추가할 문화유적지 ID는 필수입니다.', 400));
+        return next(new AppError('The cultural site ID to be added is essential.', 400));
     }
 
     // CulturalSite 및 User 존재 여부 확인은 트랜잭션 외부에서 먼저 수행
     // 이는 존재하지 않는 문서에 대해 트랜잭션을 시작하지 않도록 하여 효율성을 높입니다.
     const culturalSite = await CulturalSite.findById(siteId);
     if (!culturalSite) {
-        return next(new AppError('해당 ID를 가진 문화유적지를 찾을 수 없습니다.', 404));
+        return next(new AppError('Cannot find a cultural site with that ID..', 404));
     }
 
     const user = await User.findById(req.user.id);
     if (!user) {
-        return next(new AppError('사용자를 찾을 수 없습니다.', 404));
+        return next(new AppError('Cannot find the user.', 404));
     }
 
     if (user.favoriteSites.includes(siteId)) {
-        return next(new AppError('이미 즐겨찾기에 추가된 문화유적지입니다.', 400));
+        return next(new AppError('Already added.', 400));
     }
 
     const session = await mongoose.startSession(); // 세션 시작
@@ -229,7 +218,7 @@ const addFavoriteSite = asyncHandler(async (req, res, next) => {
         if (!updatedUser) { // 사용자가 동시에 삭제되는 등의 예외적인 경우
             await session.abortTransaction();
             session.endSession();
-            return next(new AppError('사용자를 찾을 수 없어 즐겨찾기를 추가할 수 없습니다.', 404));
+            return next(new AppError('Cannot find the user.', 404));
         }
 
         // 2. 해당 문화유산의 favoritesCount 1 증가 (세션과 함께)
@@ -242,7 +231,7 @@ const addFavoriteSite = asyncHandler(async (req, res, next) => {
         if (!updatedCulturalSite) { // 문화유산이 동시에 삭제되는 등의 예외적인 경우
             await session.abortTransaction();
             session.endSession();
-            return next(new AppError('문화유적지를 찾을 수 없어 favoritesCount를 업데이트할 수 없습니다.', 404));
+            return next(new AppError('Cannot find the cultural site', 404));
         }
 
         await session.commitTransaction(); // 모든 작업이 성공하면 커밋
@@ -250,7 +239,7 @@ const addFavoriteSite = asyncHandler(async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            message: '즐겨찾기에 문화유적지가 추가되었습니다.',
+            message: 'Successfully added.',
             data: {
                 user: updatedUser, // 업데이트된 사용자 정보를 반환
                 culturalSite: updatedCulturalSite // 업데이트된 문화유산 정보도 함께 반환
@@ -259,12 +248,12 @@ const addFavoriteSite = asyncHandler(async (req, res, next) => {
     } catch (error) {
         await session.abortTransaction(); // 오류 발생 시 모든 변경사항 롤백
         session.endSession();
-        console.error('즐겨찾기 추가 트랜잭션 중 오류 발생:', error);
+        console.error('Transaction error:', error);
         // 클라이언트에게 좀 더 명확한 오류 메시지 제공
         if (error.name === 'ValidationError') {
-            return next(new AppError(`데이터 유효성 검사 오류: ${error.message}`, 400));
+            return next(new AppError(`Data validation error: ${error.message}`, 400));
         }
-        return next(new AppError('즐겨찾기 추가 중 오류가 발생했습니다. 다시 시도해주세요.', 500));
+        return next(new AppError('An error occured. please try again.', 500));
     }
 });
 
@@ -273,17 +262,17 @@ const removeFavoriteSite = asyncHandler(async (req, res, next) => {
     const { siteId } = req.params;
 
     if (!siteId) {
-        return next(new AppError('제거할 문화유적지 ID는 필수입니다.', 400));
+        return next(new AppError('The cultural site ID to be removed is essential.', 400));
     }
 
     const culturalSite = await CulturalSite.findById(siteId);
     if (!culturalSite) {
-        return next(new AppError('해당 ID를 가진 문화유적지를 찾을 수 없습니다.', 404));
+        return next(new AppError('Cannot find the cultural site.', 404));
     }
 
     const user = await User.findById(req.user.id);
     if (!user) {
-        return next(new AppError('사용자를 찾을 수 없습니다.', 404));
+        return next(new AppError('Cannot find the user.', 404));
     }
 
     const session = await mongoose.startSession(); // 세션 시작
@@ -300,7 +289,7 @@ const removeFavoriteSite = asyncHandler(async (req, res, next) => {
         if (user.favoriteSites.length === initialLength) {
             await session.abortTransaction(); // 변경사항 없으면 롤백
             session.endSession();
-            return next(new AppError('즐겨찾기에 해당 문화유적지가 없습니다.', 404));
+            return next(new AppError('There is no cultural site in the favorites.', 404));
         }
 
         await user.save({ validateBeforeSave: false, session }); // 세션 전달
@@ -317,7 +306,7 @@ const removeFavoriteSite = asyncHandler(async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            message: '즐겨찾기에서 문화유적지가 제거되었습니다.',
+            message: 'Successfully removed.',
             data: {
                 user: user
             }
@@ -325,32 +314,12 @@ const removeFavoriteSite = asyncHandler(async (req, res, next) => {
     } catch (error) {
         await session.abortTransaction(); // 오류 발생 시 모든 변경사항 롤백
         session.endSession();
-        console.error('즐겨찾기 제거 트랜잭션 중 오류 발생:', error);
-        return next(new AppError('즐겨찾기 제거 중 오류가 발생했습니다. 다시 시도해주세요.', 500));
+        console.error('Transaction error:', error);
+        return next(new AppError('An error occured. please try again.', 500));
     }
 });
 
-// // 즐겨찾기 조회
-// const getFavoriteSites = asyncHandler(async (req, res, next) => {
-//     // 사용자의 favoriteSites 필드를 populate하여 문화유적지 정보를 가져옵니다.
-//     const user = await User.findById(req.user.id).populate({
-//         path: 'favoriteSites',
-//         select: 'name category address images' // 필요한 필드만 선택
-//     });
-
-//     if (!user) {
-//         return next(new AppError('사용자를 찾을 수 없습니다.', 404));
-//     }
-
-//     res.status(200).json({
-//         status: 'success',
-//         results: user.favoriteSites.length,
-//         data: {
-//             favoriteSites: user.favoriteSites
-//         }
-//     });
-// });
-
+// 즐겨찾기 조회
 const getFavoriteSites = asyncHandler(async (req, res, next) => {
     // 1. 현재 로그인한 사용자의 ID를 가져옵니다. (req.user.id는 인증 미들웨어를 통해 설정된다고 가정)
     const userId = req.user.id;
@@ -359,7 +328,7 @@ const getFavoriteSites = asyncHandler(async (req, res, next) => {
     const user = await User.findById(userId).select('favoriteSites');
 
     if (!user) {
-        return next(new AppError('사용자를 찾을 수 없습니다.', 404));
+        return next(new AppError('cannot find the user.', 404));
     }
 
     // 사용자의 즐겨찾기 ID 목록
@@ -435,7 +404,7 @@ const getMyReviews = asyncHandler(async (req, res, next) => {
   // 현재 로그인한 사용자 ID를 기준으로 리뷰를 찾습니다.
   // req.user는 protect 미들웨어에서 설정된 사용자 정보입니다.
   if (!req.user || !req.user.id) {
-    return next(new AppError('로그인된 사용자 정보가 없습니다.', 401));
+    return next(new AppError('There is no user info.', 401));
   }
 
   const queryObj = { user: req.user.id };

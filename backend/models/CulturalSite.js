@@ -8,13 +8,13 @@ const culturalSiteSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
-        minlength: [2, '이름은 최소 2자 이상이어야 합니다.'],
-        maxlength: [100, '이름은 최대 100자를 초과할 수 없습니다.']
+        minlength: [2, 'Name must be at least 2 characters.'],
+        maxlength: [100, 'Name cannot be over 100 characters.']
     },
     description: {
         type: String,
         trim: true,
-        maxlength: [1000, '설명은 최대 1000자를 초과할 수 없습니다.']
+        maxlength: [1000, 'Description cannot be over 1000 characters.']
     },
     category: {
         type: String,
@@ -36,14 +36,14 @@ const culturalSiteSchema = new mongoose.Schema({
                 validator: function (v) {
                     return v.length === 2 && v[0] >= -180 && v[0] <= 180 && v[1] >= -90 && v[1] <= 90;
                 },
-                message: '위치 좌표(경도, 위도)가 유효한 범위에 있지 않습니다. 경도는 -180~180, 위도는 -90~90.'
+                message: 'Not valid coordinates. lon must be between -180~180, lat must be between -90~90.'
             }
         },
     },
     address: {
         type: String,
         trim: true,
-        required: true
+        // required: true // commented for quick database setup
     },
     website: {
         type: String,

@@ -1,0 +1,1223 @@
+openapi: 3.1.0
+info:
+  title: Cultural Site API
+  version: 1.0.0
+  description: API for managing cultural sites, proposals, reviews, and user data.
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local Development Server
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: Cultural Sites
+    description: Operations related to cultural sites
+  - name: Reviews
+    description: Operations related to reviews of cultural sites
+  - name: Proposals
+    description: Operations related to proposals for cultural sites
+  - name: Users
+    description: Operations related to user management
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CulturalSite:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the cultural site.
+        name:
+          type: string
+          description: Name of the cultural site.
+          minLength: 2
+          maxLength: 100
+        description:
+          type: string
+          description: Description of the cultural site.
+          maxLength: 1000
+        category:
+          type: string
+          description: Category of the cultural site.
+          enum: 
+            - artwork
+            - gallery
+            - museum
+            - restaurant
+            - theatre
+            - arts_centre
+            - community_centre
+            - library
+            - cinema
+            - other
+        location:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ['Point']
+              description: GeoJSON type.
+            coordinates:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+              description: |
+                [longitude, latitude] coordinates. Longitude must be between -180 and 180,
+                latitude must be between -90 and 90.
+          required:
+            - type
+            - coordinates
+        address:
+          type: string
+          description: Address of the cultural site.
+        website:
+          type: string
+          format: url
+          description: Website URL of the cultural site.
+        imageUrl:
+          type: string
+          format: url
+          description: Image URL of the cultural site.
+        openingHours:
+          type: string
+          description: Opening hours of the cultural site.
+        licenseInfo:
+          type: string
+          default: "Data © OpenStreetMap contributors, ODbL."
+          description: Licensing information for the data.
+        sourceId:
+          type: string
+          description: OSM ID (node/way/relation ID) from Overpass API. (node/1234567890)
+        reviews:
+          type: array
+          items:
+            type: string
+            description: ObjectId of a Review.
+        favoritesCount:
+          type: number
+          format: int32
+          minimum: 0
+          default: 0
+          description: Number of users who favorited this site.
+        originalTags:
+          type: object
+          description: Original GeoJSON 'tags' object from the source element from Overpass API response.
+          additionalProperties: true
+        proposedBy:
+          type: string
+          description: ObjectId of the User who proposed this site.
+        registeredBy:
+          type: string
+          description: ObjectId of the User (admin) who registered this site.
+        active:
+          type: boolean
+          default: true
+          description: Field for soft deletion (not currently implemented).
+      required:
+        - name
+        - category
+        - location
+        - address
+        - sourceId
+        - originalTags
+    Review:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: MongoDB ObjectId for the review.
+        culturalSite:
+          type: string
+          description: ObjectId of the CulturalSite being reviewed.
+        user:
+          type: string
+          description: ObjectId of the User who wrote the review.
+        rating:
+          type: number
+          format: int32
+          minimum: 1
+          maximum: 5
+          description: Rating given by the user (1 to 5).
+        comment:
+          type: string
+          maxLength: 500
+          description: Comment provided by the user.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the review was created.
+        active:
+          type: boolean
+          default: true
+          description: Field for soft deletion. (not implemented)
+      required:
+        - culturalSite
+        - user
+        - rating
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the user.
+        username:
+          type: string
+          maxLength: 20
+          description: User's chosen username.
+        email:
+          type: string
+          format: email
+          description: User's email address.
+        googleId:
+          type: string
+          description: Google ID if authenticated via Google.
+        profileImage:
+          type: string
+          format: url
+          description: URL to the user's profile image.
+        role:
+          type: string
+          enum: ['user', 'admin']
+          default: 'admin'
+          description: User's role in the system. temporarily default value is 'admin' to demonstrate the functions.
+        active:
+          type: boolean
+          default: true
+          description: Field for soft deletion.
+        favoriteSites:
+          type: array
+          items:
+            type: string
+            description: ObjectId of a CulturalSite.
+          description: List of cultural sites marked as favorites by the user.
+        bio:
+          type: string
+          maxLength: 200
+          description: User's short biography.
+      required:
+        - email
+        - googleId
+    Proposal:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the proposal.
+        culturalSite:
+          type: string
+          description: ObjectId of the CulturalSite being proposed for modification or deletion. Not required for 'create' proposals.
+        proposedBy:
+          type: string
+          description: ObjectId of the User who submitted the proposal.
+        proposalType:
+          type: string
+          enum: ['create', 'update', 'delete']
+          description: Type of proposal (create, update, or delete).
+        proposedChanges:
+          type: object
+          description: Proposed changes to the cultural site.
+          additionalProperties: true
+        proposalMessage:
+          type: string
+          maxLength: 500
+          description: Optional message from the proposer.
+        status:
+          type: string
+          enum: ['pending', 'accepted', 'rejected']
+          default: 'pending'
+          description: Current status of the proposal.
+        reviewedBy:
+          type: string
+          description: ObjectId of the User (admin) who reviewed the proposal. Required if status is 'accepted' or 'rejected'.
+        adminComment:
+          type: string
+          description: Comment from the reviewing administrator. Required if status is 'accepted' or 'rejected'.
+        reviewedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the proposal was reviewed.
+      required:
+        - proposedBy
+        - proposalType
+        - proposedChanges
+paths:
+  /auth/google:
+    get:
+      summary: Start Google authentication
+      tags:
+        - Authentication
+      operationId: googleAuth
+      description: Redirects the user to Google's authentication page.
+      responses:
+        302:
+          description: Redirect to Google for authentication.
+  /auth/google/callback:
+    get:
+      summary: Google authentication callback
+      tags:
+        - Authentication
+      operationId: googleAuthCallback
+      description: Handles the callback from Google after authentication. Issues a JWT on success.
+      responses:
+        302:
+          description: Redirects to frontend on success or failure.
+        200:
+          description: Authentication successful, JWT issued (though typically a redirect happens).
+        401:
+          description: Google authentication failed.
+  /auth/logout:
+    post:
+      summary: User logout
+      tags:
+        - Authentication
+      operationId: logoutUser
+      description: Deletes the JWT cookie to log out the user.
+      responses:
+        200:
+          description: Successfully logged out.
+  /cultural-sites/nearby-osm:
+    get:
+      summary: Get nearby cultural sites from OSM database for a lon/lat coordinates
+      tags:
+        - Cultural Sites
+      operationId: getNearbyOsmCulturalSites
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: latitude
+          schema:
+            type: number
+            format: float
+          required: true
+          description: Latitude for the center of the search.
+        - in: query
+          name: longitude
+          schema:
+            type: number
+            format: float
+          required: true
+          description: Longitude for the center of the search.
+        - in: query
+          name: radius
+          schema:
+            type: number
+            format: int32
+            default: 1000 # Corrected: default is inside schema
+          description: Search radius in meters.
+      responses:
+        200:
+          description: A list of nearby cultural sites from OSM.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CulturalSite'
+        400:
+          description: Invalid latitude/longitude or location not within Chemnitz.
+        401:
+          description: Unauthorized if no token is provided.
+        403:
+          description: Forbidden if user is not 'admin' or 'user'.
+        500:
+          description: Internal server error.
+  /cultural-sites:
+    get:
+      summary: Get all cultural sites
+      tags:
+        - Cultural Sites
+      operationId: getAllCulturalSites
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by cultural site category.
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Filter by cultural site name (partial match).
+      responses:
+        200:
+          description: A list of cultural sites.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CulturalSite'
+        500:
+          description: Internal server error.
+    post:
+      summary: Save a cultural site to the database
+      tags:
+        - Cultural Sites
+      operationId: saveCulturalSiteToDb
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CulturalSite'
+            examples:
+              newCulturalSite:
+                value:
+                  name: "Example Museum"
+                  description: "A wonderful museum of modern art."
+                  category: "Museum"
+                  location:
+                    type: "Point"
+                    coordinates: [12.345, 54.321]
+                  address: "123 Museum St, City"
+                  website: "http://examplemuseum.com"
+                  sourceId: "osm_node_12345"
+                  originalTags:
+                    amenity: "museum"
+                    name: "Example Museum"
+      responses:
+        201:
+          description: Cultural site successfully saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CulturalSite'
+        400:
+          description: Invalid input (e.g., missing fields, invalid location, not in Chemnitz).
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden (only admins can add sites, or sourceId is in exclusion list).
+        409:
+          description: Conflict (e.g., sourceId already registered).
+        500:
+          description: Internal server error during saving.
+  /cultural-sites/{id}:
+    get:
+      summary: Get a cultural site by ID
+      tags:
+        - Cultural Sites
+      operationId: getCulturalSiteById
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+      responses:
+        200:
+          description: Details of the cultural site.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CulturalSite'
+        400:
+          description: Invalid cultural site ID format.
+        404:
+          description: Cultural site not found.
+        500:
+          description: Internal server error.       
+    put:
+      summary: Update a cultural site by ID (Admin only)
+      tags:
+        - Cultural Sites
+      operationId: updateCulturalSiteById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CulturalSite'
+            examples:
+              updateCulturalSite:
+                value:
+                  description: "Updated description of the museum."
+                  openingHours: "9 AM - 5 PM"
+      responses:
+        200:
+          description: Cultural site updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CulturalSite'
+        400:
+          description: Invalid input.
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only admins can update sites.
+        404:
+          description: Cultural site not found.
+    delete:
+      summary: Delete a cultural site by ID (Admin only)
+      tags:
+        - Cultural Sites
+      operationId: deleteCulturalSiteById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+      responses:
+        204:
+          description: Cultural site successfully deleted.
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden (only admins can delete sites).
+        404:
+          description: Cultural site not found.
+        409:
+          description: Conflict (e.g., sourceId already exists in exclusion list).
+        500:
+          description: Internal server error during deletion.
+  /cultural-sites/{culturalSiteId}/reviews:
+    get:
+      summary: Get all reviews for a specific cultural site
+      tags:
+        - Reviews
+      operationId: getAllReviewsForCulturalSite
+      parameters:
+        - in: path
+          name: culturalSiteId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+      responses:
+        200:
+          description: A list of reviews for the cultural site.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+        400:
+          description: Invalid input parameter.
+        404:
+          description: The specified cultural site does not exist.
+        500:
+          description: Internal server error.  
+    post:
+      summary: Create a review for a specific cultural site
+      tags:
+        - Reviews
+      operationId: createReviewForCulturalSite
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: culturalSiteId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: number
+                  format: int32
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  maxLength: 500
+              required:
+                - rating
+            examples:
+              newReview:
+                value:
+                  rating: 4
+                  comment: "A great place to visit!"
+      responses:
+        201:
+          description: Review successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        400:
+          description: Invalid input or user already reviewed this site.
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only 'user' or 'admin' can create reviews.
+        404:
+          description: The cultural site for which the review is being created does not exist.
+        409:
+          description: The user has already submitted a review for this specific cultural site.
+        500:
+          description: internal server error
+  /cultural-sites/{culturalSiteId}/reviews/{reviewId}:
+    get:
+      summary: Get a specific review for a cultural site
+      tags:
+        - Reviews
+      operationId: getReviewByIdForCulturalSite
+      parameters:
+        - in: path
+          name: culturalSiteId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+        - in: path
+          name: reviewId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the review.
+      responses:
+        200:
+          description: Details of the review.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        404:
+          description: Cultural site or review not found.
+        500:
+          description: Internal server error.
+    patch:
+      summary: Update a specific review 
+      tags:
+        - Reviews
+      operationId: updateReviewById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: culturalSiteId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+        - in: path
+          name: reviewId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the review to update.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: number
+                  format: int32
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  maxLength: 500
+            examples:
+              updateReview:
+                value:
+                  comment: "An updated comment."
+      responses:
+        200:
+          description: Review updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only the review's owner can update it.
+        404:
+          description: Review not found.
+        500:
+          description: Internal server error.
+    delete:
+      summary: Delete a specific review
+      tags:
+        - Reviews
+      operationId: deleteReviewById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: culturalSiteId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site.
+        - in: path
+          name: reviewId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the review to delete.
+      responses:
+        204:
+          description: Review successfully deleted.
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only the review's owner or an admin can delete it.
+        404:
+          description: Review not found.
+        500:
+          description: Internal server error.
+  /proposals/my-proposals:
+    get:
+      summary: Get proposals submitted by the current user
+      tags:
+        - Proposals
+      operationId: getProposalsByUserId
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: A list of proposals submitted by the user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Proposal'
+        401:
+          description: Unauthorized.
+        500:
+          description: Internal server error.
+  /proposals:
+    post:
+      summary: Create a new proposal (create, update, or delete)
+      tags:
+        - Proposals
+      operationId: createProposal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                culturalSite:
+                  type: string
+                  description: Cultural Site ID if proposalType is 'update' or 'delete'.
+                proposalType:
+                  type: string
+                  enum: ['create', 'update', 'delete']
+                proposedChanges:
+                  type: object
+                  description: |
+                    For 'create' and 'update' types, details of the changes.
+                    For 'create', this should be the new cultural site data directly.
+                    For 'update', it should contain key-value pairs of fields to update.
+                    For 'delete', this should be empty.
+                proposalMessage:
+                  type: string
+                  maxLength: 500
+              required:
+                - proposedBy # This field is injected by the server
+                - proposalType
+                - proposedChanges
+            examples:
+              createProposal:
+                value:
+                  proposalType: "create"
+                  proposedChanges:
+                    name: "New Museum Idea"
+                    category: "Museum"
+                    location:
+                      type: "Point"
+                      coordinates: [10.123, 20.456]
+                    address: "New Street 1"
+                    sourceId: "new_osm_id_xyz"
+                    originalTags:
+                      building: "yes"
+                      name: "New Museum Idea"
+              updateProposal:
+                value:
+                  culturalSite: "60c72b2f9b1d6c001c8e4d3a"
+                  proposalType: "update"
+                  proposedChanges:
+                    description: "Updated description for the museum."
+                    openingHours: "10 AM - 6 PM"
+              deleteProposal:
+                value:
+                  culturalSite: "60c72b2f9b1d6c001c8e4d3b"
+                  proposalType: "delete"
+                  proposedChanges: {}
+      responses:
+        201:
+          description: Proposal successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proposal'
+        400:
+          description: Invalid input.
+        401:
+          description: Unauthorized.
+        404:
+          description: The target resource for the proposal was not found.
+        409:
+          description: A conflict occurred, typically because a similar proposal or resource already exists.
+        500:
+          description: Internal server error
+    get:
+      summary: Get all proposals (Admin only)
+      tags:
+        - Proposals
+      operationId: getAllProposals
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: ['pending', 'accepted', 'rejected']
+          description: Filter proposals by status.
+        - in: query
+          name: proposalType
+          schema:
+            type: string
+            enum: ['create', 'update', 'delete']
+          description: Filter proposals by type.
+      responses:
+        200:
+          description: A list of all proposals.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Proposal'
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only admins can view all proposals.
+        500:
+          description: Internal server error.
+  /proposals/{id}:
+    get:
+      summary: Get a specific proposal by ID (Admin only)
+      tags:
+        - Proposals
+      operationId: getProposalById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the proposal.
+      responses:
+        200:
+          description: Details of the proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proposal'
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only admins can view proposals by ID.
+        404:
+          description: Proposal not found.
+        500:
+          description: Internal server error.
+  /proposals/{id}/accept:
+    patch:
+      summary: Accept a proposal (Admin only)
+      tags:
+        - Proposals
+      operationId: acceptProposal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the proposal to accept.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                adminComment:
+                  type: string
+                  description: Comment from the administrator.
+              required:
+                - adminComment
+      responses:
+        200:
+          description: Proposal successfully accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proposal'
+        400:
+          description: Invalid input or proposal already reviewed.
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only admins can accept proposals.
+        404:
+          description: Proposal not found.
+        500:
+          description: Internal server error.
+  /proposals/{id}/reject:
+    patch:
+      summary: Reject a proposal (Admin only)
+      tags:
+        - Proposals
+      operationId: rejectProposal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the proposal to reject.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                adminComment:
+                  type: string
+                  description: Comment from the administrator.
+              required:
+                - adminComment
+      responses:
+        200:
+          description: Proposal successfully rejected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proposal'
+        400:
+          description: Invalid input or proposal already reviewed.
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only admins can reject proposals.
+        404:
+          description: Proposal not found.
+        500:
+          description: Internal server error.
+  /users/updateRole/{userId}:
+    patch:
+      summary: Update a user's role (Admin only)
+      tags:
+        - Users
+      operationId: updateUserRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the user whose role is to be updated.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: ['user', 'admin']
+              required:
+                - role
+            examples:
+              changeToAdmin:
+                value:
+                  role: "admin"
+      responses:
+        200:
+          description: User role updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Invalid input.
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only admins can update user roles.
+        404:
+          description: User not found.
+        500:
+          description: Internal server error.
+  /users/me:
+    get:
+      summary: Get current user's profile
+      tags:
+        - Users
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Current user's profile details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        401:
+          description: Unauthorized.
+        500:
+          description: Internal server error.
+    patch:
+      summary: Update current user's profile
+      tags:
+        - Users
+      operationId: updateMe
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  maxLength: 20
+                profileImage:
+                  type: string
+                bio:
+                  type: string
+                  maxLength: 200
+            examples:
+              updateProfile:
+                value:
+                  username: "NewUsername"
+                  bio: "My updated bio."
+      responses:
+        200:
+          description: User profile updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Invalid input.
+        401:
+          description: Unauthorized.
+        500:
+          description: Internal server error.
+    delete:
+      summary: Delete current user's account
+      tags:
+        - Users
+      operationId: deleteMe
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User account successfully deleted.
+        401:
+          description: Unauthorized.
+        404:
+          description: can't find the user.
+        500:
+          description: Internal server error.
+  /users/{userId}:
+    get:
+      summary: Get user information by ID
+      tags:
+        - Users
+      operationId: getUserById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the user.
+      responses:
+        200:
+          description: User profile details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        401:
+          description: Unauthorized.
+        404:
+          description: User not found.
+        500:
+          description: Internal server error.
+  /users:
+    get:
+      summary: Get all user information (Admin only)
+      tags:
+        - Users
+      operationId: getAllUsers
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: A list of all users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        401:
+          description: Unauthorized.
+        403:
+          description: Forbidden, only admins can view all users.
+        500:
+          description: Internal server error.
+  /users/me/favorites:
+    get:
+      summary: Get current user's favorite cultural sites
+      tags:
+        - Users
+      operationId: getFavoriteSites
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: A list of favorite cultural sites.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CulturalSite'
+        401:
+          description: Unauthorized.
+        404:
+          description: can't find the user.
+        500:
+          description: Internal server error.
+  /users/me/favorites/{siteId}:
+    post:
+      summary: Add a cultural site to current user's favorites
+      tags:
+        - Users
+      operationId: addFavoriteSite
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: siteId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site to add to favorites.
+      responses:
+        200:
+          description: Cultural site added to favorites.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Cultural site already in favorites.
+        401:
+          description: Unauthorized.
+        404:
+          description: Cultural site not found.
+        500:
+          description: Internal server error.
+    delete:
+      summary: Remove a cultural site from current user's favorites
+      tags:
+        - Users
+      operationId: removeFavoriteSite
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: siteId
+          schema:
+            type: string
+          required: true
+          description: Unique ID of the cultural site to remove from favorites.
+      responses:
+        200:
+          description: Cultural site removed from favorites.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Cultural site not in favorites.
+        401:
+          description: Unauthorized.
+        404:
+          description: Cultural site not found.
+        500:
+          description: Internal server error.
+  /users/me/reviews:
+    get:
+      summary: Get reviews submitted by the current user
+      tags:
+        - Users
+      operationId: getMyReviews
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: A list of reviews submitted by the user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+        401:
+          description: Unauthorized.
+        500:
+          description: Internal server error.

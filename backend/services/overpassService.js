@@ -14,7 +14,7 @@ const { processOsmElementForCulturalSite } = require('../utils/osmDataProcessor'
 const ExcludeSourceId = require('../models/ExcludeSourceId');
 const path = require('path');
 const fs = require('fs/promises'); // For async file operations
-const _ = require('lodash'); // Assuming lodash is installed for _.isEqual
+const isEqual = require('node:util').isDeepStrictEqual
 
 // Define the log directory
 const LOG_DIR = path.join(__dirname, '../logs'); // Adjust path as needed
@@ -138,7 +138,7 @@ const overpassUpdater = async () => {
 
                 if (existingSite) {
                     // 3.2.1. Existing cultural site: Check if originalTags changed
-                    if (!_.isEqual(existingSite.originalTags, element.tags)) {
+                    if (!isEqual(existingSite.originalTags, element.tags)) {
                         customLogger(`[UPDATE] ${existingSite.name} (sourceId: ${sourceId})`);
                         culturalSitesToUpdate.push({
                             id: existingSite._id,

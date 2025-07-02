@@ -12,7 +12,7 @@ router.use(authController.protect);
 // PATCH /api/v1/users/updateRole/:userId
 router.patch(
   '/updateRole/:userId',
-  authController.restrictTo('admin'), // Only admin can change user roles
+  authController.restrictTo('admin'),
   authController.updateUserRole
 );
 
