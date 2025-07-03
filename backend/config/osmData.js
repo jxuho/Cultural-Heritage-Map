@@ -128,7 +128,7 @@ area(${AREA_ID})->.searchArea;
   way["amenity"="cinema"](area.searchArea)${around};
   relation["amenity"="cinema"](area.searchArea)${around};
 
-  // 추가: key 값이 다음에 해당하는 정보들 포함
+  // ADDED QUERIES
   node["historic"](area.searchArea)${around};
   way["historic"](area.searchArea)${around};
   relation["historic"](area.searchArea)${around};

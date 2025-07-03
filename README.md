@@ -43,14 +43,15 @@ The explanation below assumes use of a CLI and assumes a MongoDB database exist.
     - This script fetch cultural site data from Overpass API.
     - Data will be saved in `/backend/data`
 
-3.  Run `node scripts/importGeojson.js` 
+3.  Run `node scripts/importGeojson.js --no-reverse-geocode` 
     - This script import the newest `chemnitz_cultural_sites_[time].geojson` saved in `/backend/data` and convert it into CulturalSite schema, and load it into the database.
+    - Check culturalsites collection in your database.
         
     ##### **Note**
     importGeojson.js basically performs reverse-geocoding using the Nominatim API for any of the hundreds of items in the geojson that do not have an addr tag specified. This process can take several minutes.
-    This process had to be done because the address field in culturalSiteSchema (/backend/models/CulturalSite.js) was set to `required: true`.
+    This process had to be done because the address field in culturalSiteSchema (`/backend/models/CulturalSite.js`) was set to `required: true`.
     However, for faster database setup, `required: true` is currently commented out.
-    For faster database setup, you can run `node scripts/importGeojson.js --no-reverse-geocode`. This script loads the geojson file into the database without performing reverse geocoding.
+    To perform reverse geocoding, you can run `node scripts/importGeojson.js`. This script loads the geojson file into the database with performing reverse geocoding, and this is the original logic of the app.
 
 
 
@@ -63,15 +64,18 @@ The explanation below assumes use of a CLI and assumes a MongoDB database exist.
 
 ### 5. Access to the Browser
 1. Open a Browser
-2. Enter `http://localhost:3000/` in the address bar.
+2. Enter http://localhost:3000/ in the address bar.
 
     ##### **Note**
-    When you first sign-up using Google OAuth, the role is set to 'user' by default, but it has been modified to be temporarily set to 'admin' for smooth function examination.
-    - `/backend/models/User.js` 'role' field was set to 'admin' currently.
+    When initially signing up via Google OAuth, the role is defaulted to 'user'. However, for a smoother functional review, it was temporarily set to 'admin'.
+    (`/backend/models/User.js` 'role' field default value was set to 'admin' currently.)
+    Since the app behaves differently when the role is 'user' and when it is 'admin' (my-account page, proposals), the case when the role is 'user' should also be checked. 
+    To do this, the role can be changed in another account with the role set to 'admin' to 'user' at http://localhost:3000/my-account/users, but there's simpler way to change the value of the role field in the database users collection to 'user' manually.
+    
 
 
 ---
 
 # OpenAPI Specification
 - The OpenAPI Specification is located at `/backend/public/openapi.yaml`.
-- Since it is hosted in the backend by the swagger-ui-express library, you can access the OpenAPI document via `http://localhost:5000/api-docs/`.
+- Since it is hosted in the backend by the swagger-ui-express library, you can access the OpenAPI document via http://localhost:5000/api-docs/.
