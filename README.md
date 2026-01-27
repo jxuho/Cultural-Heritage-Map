@@ -1,3 +1,9 @@
+### **Live Demo:** [Click here](https://your-link-here.com)  
+> ⚠️ **Note:** The server is hosted on Render's free tier and may take **up to 1 minute to wake up** on the first load.
+
+
+
+
 # How to initialize Database and Application
 
 ### 1. Create `.env` file at `/backend` directory
