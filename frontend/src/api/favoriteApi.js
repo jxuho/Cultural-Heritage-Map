@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+const API_BASE_URL = import.meta.env.PROD 
+  ? "https://chemnitz-cultural-sites-map.onrender.com/api/v1" 
+  : "http://localhost:5000/api/v1";
 
 // 즐겨찾기 추가
 export const addFavorite = async (culturalSiteId) => {

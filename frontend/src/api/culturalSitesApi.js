@@ -2,7 +2,9 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = "http://localhost:5000/api/v1";
+const API_BASE_URL = import.meta.env.PROD 
+  ? "https://chemnitz-cultural-sites-map.onrender.com/api/v1" 
+  : "http://localhost:5000/api/v1";
 
 // 모든 문화재 정보를 가져오는 함수
 export const fetchAllCulturalSites = async (params = {}) => {
