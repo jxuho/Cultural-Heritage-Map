@@ -1,4 +1,4 @@
-### **Live Demo:** [Click here]([https://chemnitz-cultural-sites.onrender.com/])  
+### **Live Demo:** [Click here](https://chemnitz-cultural-sites.onrender.com/)
 > ⚠️ **Note:** The server is hosted on Render's free tier and may take **up to 1 minute to wake up** on the first load.
 
 
