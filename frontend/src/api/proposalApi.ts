@@ -1,40 +1,33 @@
-import axios, { AxiosError } from 'axios';
+import axiosInstance from './axiosInstance';
 import { ApiResponse } from '../types/api';
 import { Proposal } from '../types/proposal';
-
-const API_BASE_URL = import.meta.env.PROD 
-  ? "https://chemnitz-cultural-sites-map.onrender.com/api/v1" 
-  : "http://localhost:5000/api/v1";
+import { AxiosError } from 'axios';
 
 /**
  * Submit a new proposal
- * @param proposalData - 백엔드 모델의 validation을 통과하기 위한 데이터 구조
  */
 export const submitProposal = async (
   proposalData: Partial<Proposal>
 ): Promise<ApiResponse<{ proposal: Proposal }>> => {
   try {
-    const response = await axios.post<ApiResponse<{ proposal: Proposal }>>(
-      `${API_BASE_URL}/proposals`, 
-      proposalData, 
-      { withCredentials: true }
+    const response = await axiosInstance.post<ApiResponse<{ proposal: Proposal }>>(
+      '/proposals', 
+      proposalData
     );
     return response.data;
   } catch (error) {
     const err = error as AxiosError<{ message: string }>;
-    // 백엔드 validator에서 던지는 구체적인 에러 메시지를 우선적으로 반환
     throw err.response?.data?.message || 'Failed to submit proposal';
   }
 };
 
 /**
- * 모든 제안서 가져오기 (Admin용)
+ * Fetch all proposals (Admin only)
  */
 export const fetchAllProposals = async (): Promise<Proposal[]> => {
   try {
-    const response = await axios.get<ApiResponse<{ proposals: Proposal[] }>>(
-      `${API_BASE_URL}/proposals/`, 
-      { withCredentials: true }
+    const response = await axiosInstance.get<ApiResponse<{ proposals: Proposal[] }>>(
+      '/proposals/'
     );
     return response.data.data.proposals || [];
   } catch (error) {
@@ -45,18 +38,16 @@ export const fetchAllProposals = async (): Promise<Proposal[]> => {
 };
 
 /**
- * 제안 승인 (Admin 전용)
- * 백엔드 모델 상 status가 'accepted'가 되면 adminComment가 필수입니다.
+ * Accept a proposal (Admin)
  */
 export const acceptProposal = async (
   proposalId: string, 
   adminComment: string
 ): Promise<ApiResponse<{ proposal: Proposal }>> => {
   try {
-    const response = await axios.patch<ApiResponse<{ proposal: Proposal }>>(
-      `${API_BASE_URL}/proposals/${proposalId}/accept`,
-      { adminComment },
-      { withCredentials: true }
+    const response = await axiosInstance.patch<ApiResponse<{ proposal: Proposal }>>(
+      `/proposals/${proposalId}/accept`,
+      { adminComment }
     );
     return response.data;
   } catch (error) {
@@ -66,18 +57,16 @@ export const acceptProposal = async (
 };
 
 /**
- * 제안 거절 (Admin 전용)
- * 백엔드 모델 상 status가 'rejected'가 되면 adminComment가 필수입니다.
+ * Reject a proposal (Admin only)
  */
 export const rejectProposal = async (
   proposalId: string, 
   adminComment: string
 ): Promise<ApiResponse<{ proposal: Proposal }>> => {
   try {
-    const response = await axios.patch<ApiResponse<{ proposal: Proposal }>>(
-      `${API_BASE_URL}/proposals/${proposalId}/reject`,
-      { adminComment },
-      { withCredentials: true }
+    const response = await axiosInstance.patch<ApiResponse<{ proposal: Proposal }>>(
+      `/proposals/${proposalId}/reject`,
+      { adminComment }
     );
     return response.data;
   } catch (error) {
@@ -87,13 +76,12 @@ export const rejectProposal = async (
 };
 
 /**
- * 내가 제출한 제안서 목록 조회
+ * Fetch the list of proposals I submitted
  */
 export const fetchMyProposals = async (): Promise<Proposal[]> => {
   try {
-    const response = await axios.get<ApiResponse<{ proposals: Proposal[] }>>(
-      `${API_BASE_URL}/proposals/my-proposals`,
-      { withCredentials: true }
+    const response = await axiosInstance.get<ApiResponse<{ proposals: Proposal[] }>>(
+      '/proposals/my-proposals'
     );
     return response.data.data.proposals || [];
   } catch (error) {
