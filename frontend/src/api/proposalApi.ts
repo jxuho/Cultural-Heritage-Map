@@ -36,13 +36,12 @@ export const fetchAllProposals = async (): Promise<Proposal[]> => {
     throw err;
   }
 };
-
 /**
  * Accept a proposal (Admin)
  */
 export const acceptProposal = async (
   proposalId: string, 
-  adminComment: string
+  adminComment?: string // ?를 추가하여 선택적 매개변수로 변경
 ): Promise<ApiResponse<{ proposal: Proposal }>> => {
   try {
     const response = await axiosInstance.patch<ApiResponse<{ proposal: Proposal }>>(
@@ -61,7 +60,7 @@ export const acceptProposal = async (
  */
 export const rejectProposal = async (
   proposalId: string, 
-  adminComment: string
+  adminComment?: string // ?를 추가하여 선택적 매개변수로 변경
 ): Promise<ApiResponse<{ proposal: Proposal }>> => {
   try {
     const response = await axiosInstance.patch<ApiResponse<{ proposal: Proposal }>>(
