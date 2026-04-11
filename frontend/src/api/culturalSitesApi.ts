@@ -1,17 +1,13 @@
-import axios, { AxiosError } from 'axios';
+import axiosInstance from './axiosInstance'; 
 import { Place } from '../types/place';
 import { ApiResponse } from '@/types/api';
-
-const API_BASE_URL = import.meta.env.PROD 
-  ? "https://chemnitz-cultural-sites-map.onrender.com/api/v1" 
-  : "http://localhost:5000/api/v1";
-
+import { AxiosError } from 'axios';
 
 // 1. 모든 문화재 정보를 가져오는 함수
 export const fetchAllCulturalSites = async (params: Record<string, any> = {}): Promise<Place[]> => {
   try {
-    const response = await axios.get<ApiResponse<{ culturalSites: Place[] }>>(
-      `${API_BASE_URL}/cultural-sites`, 
+    const response = await axiosInstance.get<ApiResponse<{ culturalSites: Place[] }>>(
+      '/cultural-sites', 
       { params: { limit: 1000, ...params } }
     );
     return response.data.data.culturalSites || [];
@@ -24,14 +20,11 @@ export const fetchAllCulturalSites = async (params: Record<string, any> = {}): P
 
 // 2. 특정 문화재 정보를 가져오는 함수
 export const fetchCulturalSiteById = async (id: string): Promise<Place | null> => {
-  if (!id) {
-    const error = new Error("Cultural site ID is required.");
-    console.error(error.message);
-    throw error;
-  }
+  if (!id) throw new Error("Cultural site ID is required.");
+
   try {
-    const response = await axios.get<ApiResponse<{ culturalSite: Place }>>(
-      `${API_BASE_URL}/cultural-sites/${id}`
+    const response = await axiosInstance.get<ApiResponse<{ culturalSite: Place }>>(
+      `/cultural-sites/${id}`
     );
     return response.data.data.culturalSite || null;
   } catch (error) {
@@ -43,47 +36,38 @@ export const fetchCulturalSiteById = async (id: string): Promise<Place | null> =
 
 // 3. 주변 OSM 장소 가져오기
 export const getNearbyOsm = async (lat: number, lon: number): Promise<Place[]> => {
-  if (!lat || !lon) {
-    const error = new Error("Latitude and Longitude are required to fetch nearby OSM sites.");
-    console.error(error.message);
-    throw error;
-  }
+  if (!lat || !lon) throw new Error("Latitude and Longitude are required.");
+
   try {
-    const response = await axios.get<ApiResponse<{ osmCulturalSites: Place[] }>>(
-      `${API_BASE_URL}/cultural-sites/nearby-osm`, 
-      { 
-        params: { lat, lon, noReverseGeocode: 'true' },
-        withCredentials: true 
-      }
+    const response = await axiosInstance.get<ApiResponse<{ osmCulturalSites: Place[] }>>(
+      '/cultural-sites/nearby-osm', 
+      { params: { lat, lon, noReverseGeocode: 'true' } }
     );
     return response.data.data.osmCulturalSites || [];
   } catch (error) {
     const err = error as AxiosError;
-    console.error(`Error fetching nearby OSM sites for lat: ${lat}, lon: ${lon}:`, err);
+    console.error(`Error fetching nearby OSM sites:`, err);
     throw err;
   }
 };
 
 // 4. Site 즉시 생성 (Admin)
 export const createCulturalSite = async (siteData: Partial<Place>): Promise<Place> => {
-  const response = await axios.post<ApiResponse<{ culturalSite: Place }>>(
-    `${API_BASE_URL}/cultural-sites`, 
-    siteData, 
-    { withCredentials: true }
+  const response = await axiosInstance.post<ApiResponse<{ culturalSite: Place }>>(
+    '/cultural-sites', 
+    siteData
   );
   return response.data.data.culturalSite;
 };
 
 // 5. 특정 문화재 정보 업데이트 (Admin)
 export const updateCulturalSite = async (culturalSiteId: string, updateData: Partial<Place>): Promise<Place | null> => {
-  if (!culturalSiteId || !updateData) {
-    throw new Error("Cultural site ID and update data are required.");
-  }
+  if (!culturalSiteId || !updateData) throw new Error("ID and data are required.");
+
   try {
-    const response = await axios.put<ApiResponse<{ culturalSite: Place }>>(
-      `${API_BASE_URL}/cultural-sites/${culturalSiteId}`, 
-      updateData, 
-      { withCredentials: true }
+    const response = await axiosInstance.put<ApiResponse<{ culturalSite: Place }>>(
+      `/cultural-sites/${culturalSiteId}`, 
+      updateData
     );
     return response.data.data.culturalSite || null;
   } catch (error) {
@@ -95,14 +79,10 @@ export const updateCulturalSite = async (culturalSiteId: string, updateData: Par
 
 // 6. 특정 문화재 삭제 (Admin)
 export const deleteCulturalSite = async (culturalSiteId: string): Promise<boolean> => {
-  if (!culturalSiteId) {
-    throw new Error("Cultural site ID is required.");
-  }
+  if (!culturalSiteId) throw new Error("Cultural site ID is required.");
+
   try {
-    await axios.delete(
-      `${API_BASE_URL}/cultural-sites/${culturalSiteId}`, 
-      { withCredentials: true }
-    );
+    await axiosInstance.delete(`/cultural-sites/${culturalSiteId}`);
     return true; 
   } catch (error) {
     const err = error as AxiosError;
