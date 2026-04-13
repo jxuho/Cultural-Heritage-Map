@@ -2,6 +2,9 @@
 > ⚠️ **Note:** The server is hosted on Render's free tier and may take **up to 1 minute to wake up** on the first load.
 
 
+🚧 Ongoing Progress:
+Currently migrating the entire codebase to TypeScript and adding Berlin data support in the feature/typescript-migration branch.
+
 
 
 # How to initialize Database and Application
