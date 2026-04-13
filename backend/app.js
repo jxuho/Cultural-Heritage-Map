@@ -97,7 +97,10 @@ const frontendPath = path.join(__dirname, '../frontend/dist');
 // 정적 파일 서빙
 app.use(express.static(frontendPath));
 
-app.get('*', (req, res) => {
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(frontendPath, 'index.html'));
+// });
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
