@@ -13,12 +13,12 @@ interface AuthState {
   checkAuthStatus: () => Promise<void>;
 }
 
-const API_BASE_URL = import.meta.env.PROD
-  ? "https://chemnitz-cultural-sites-map.onrender.com/api/v1"
-  : "http://localhost:5000/api/v1";
+// const API_BASE_URL = import.meta.env.PROD
+//   ? "https://chemnitz-cultural-sites-map.onrender.com/api/v1"
+//   : "http://localhost:5000/api/v1";
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true, // Include HttpOnly cookies in all requests
 });
 
