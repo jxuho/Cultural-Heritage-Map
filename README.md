@@ -5,56 +5,101 @@
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-An interactive web application designed to explore and manage cultural heritage sites in **Chemnitz, Germany**. This project was built using the **MERN stack**, focusing on efficient GIS data handling, interactive mapping, and a professional administrative workflow.
+Discover and explore Chemnitz's cultural heritage sites with an interactive map. Built as a full-stack web application with user authentication, admin workflows(RBAC), and real-time data integration.
 
 ---
-
 ### 🔗 **[Live Demo](https://cultural-heritage-map.vercel.app/)**
 
 > ⚠️ **Note:** The backend is hosted on Render's free tier. If the site is idle, the server "sleeps." Please allow **30–60 seconds** for the initial load while the backend wakes up.
 
 ---
 
-## ✨ Key Features (Frontend & UX Focus)
+### Main Map View
+<img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/c0940d74-3b77-4aca-adc2-e4e600b030be" /> 
+<br>
+<br>
+<br>
+<br>
+<details>
+<summary><b>📸 More Screenshots</b></summary>  
+  
+**Admin Dashboard**
+<img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/f3827a95-f97f-44f8-8a46-b5e98e4f492e" />
 
-* **Interactive Map Rendering:** Real-time visualization of heritage sites using **OpenStreetMap** and the **Overpass API**.
-* **Decoupled Architecture:** Optimized performance by hosting the frontend on Vercel’s Global Edge Network and the backend on Render.
-* **Admin Dashboard:** Comprehensive interface for managing user roles and reviewing site proposals.
-* **Google OAuth 2.0 Integration:** Secure and seamless social authentication flow.
-* **Responsive Design:** Fully optimized for mobile, tablet, and desktop viewing.
-* **Automated Data Sync:** Weekly cron-jobs to fetch and update cultural data from the Overpass API.
+**User Management Panel (admin)**
+<img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/ad95fb98-3b79-4b38-a7ef-06033aa58650" /> 
+
+**User Dashboard**
+<img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/56fd43b2-ac40-40cc-b5a1-f2fc0c1cf25b" />
+
+**Suggest New Place (user)**
+<img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/dc83060b-02a3-4361-8d20-e8a3fde27294" />
+<img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/50b90ace-81ab-4281-a7c5-5c3c2f6f2b0c" />
+
+**Manage Suggestion (admin)**
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/76b314c1-c88e-4d16-bd4d-55d5e4db3656" />
+
+
+**Mobile View**
+<img width="390" height="420" alt="image" src="https://github.com/user-attachments/assets/42141d64-9d47-468c-8573-254adbafca14" />
+
+</details>
+
+<br>
+<br>
+
+---
+
+## ✨ Key Features
+
+* 🗺️ **Explore Cultural Heritage** - Discover 500+ historic sites in Chemnitz with interactive mapping and real-time data from OpenStreetMap
+* 🔐 **Role-Based Access Control** - Different permissions for users and administrators to manage content safely
+* 👤 **Social Authentication** - Quick login with Google OAuth 2.0, no password needed
+* 📱 **Fully Responsive** - Works seamlessly on mobile, tablet, and desktop devices
+* ✅ **Auto-Updated Data** - Weekly automatic sync with OpenStreetMap keeps information current
+* 🎯 **Admin Dashboard** - Manage users, review proposals, and moderate site submissions
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### **Frontend**
-* **React (Vite):** Leveraging Vite for lightning-fast HMR and optimized production builds.
-* **TypeScript:** Currently migrating the codebase to TS to ensure type safety and scalability.
-* **State Management:** (e.g., React Query / Context API)
-* **Styling:** (e.g., CSS Modules / Tailwind CSS)
+- React 18, Vite, TypeScript, TanStack Query, Zustand, Tailwind CSS, Leaflet
 
 ### **Backend**
-* **Node.js & Express:** RESTful API architecture with robust error handling.
-* **MongoDB Atlas:** Cloud-hosted NoSQL database utilizing replica sets for transactions.
-* **Passport.js:** Strategic implementation of JWT and Google OAuth strategies.
+- Node.js, Express, MongoDB Atlas, Passport.js (JWT + OAuth 2.0)
+
+### **Deployment**
+- Frontend: Vercel | Backend: Render | Database: MongoDB Atlas
 
 ---
+## 📚 Project Context
 
-## 🚀 Architectural Decision: Why Vercel + Render?
+**TU Chemnitz "Datenbanken und Web-Techniken" Coursework (Grade: 1.0)** 
 
-To provide the best possible user experience for a **Werkstudent** portfolio, I chose a decoupled deployment strategy:
-1.  **Vercel (Frontend):** Ensures the UI is delivered via CDN immediately, preventing the "blank screen" during backend cold starts.
-2.  **Render (Backend):** Provides a reliable environment for Node.js logic and scheduled cron-jobs.
-3.  **Result:** Faster First Contentful Paint (FCP) and a more professional feel for the end user.
+Started as a university assignment but significantly extended beyond course requirements with:
+- **RBAC Implementation** - Multi-role permission system for users and administrators
+- **Production Deployment** - Full-stack setup with Vercel (Frontend) + Render (Backend)
+- **API Documentation** - OpenAPI/Swagger specification for all endpoints
+- **Advanced Authentication** - Secure JWT + OAuth 2.0 integration with httpOnly cookies
+- **Geospatial Integration** - Real-time data sync from Overpass API with batch processing
+- **Database Design** - MongoDB replica sets for transaction support in concurrent workflows
 
 ---
+## 🚧 Current Development
 
-## 🚧 Roadmap & Ongoing Progress
+- 🔄 **TypeScript Migration:** 60% complete - converting React components and Express routes for type safety and scalability
+- 🌍 **Berlin Support:** Extending geospatial architecture to support multiple German cities
 
-- [ ] **TypeScript Migration:** Converting all React components and Express routes to TypeScript (currently 60% complete).
-- [ ] **Berlin Support:** Extending the data architecture to support multiple German cities.
-- [ ] **Performance:** Implementing client-side caching to reduce API calls to the Overpass server.
+- 
+---
+## 🎯 Key Technical Learnings
+
+- **GIS & Mapping:** Integrated Overpass API and Leaflet for efficient geospatial data handling
+- **Authentication:** Implemented JWT + OAuth 2.0 flow with security best practices (httpOnly cookies)
+- **Full-Stack Architecture:** Designed decoupled frontend/backend deployment for optimal user experience
+- **Database Design:** Used MongoDB replica sets for transaction support in multi-user workflows
+- **DevOps:** Automated data sync with cron jobs and implemented production monitoring
 
 ---
 
@@ -103,6 +148,5 @@ cd backend && npm start (Runs on http://localhost:5000)
 </details>
 
 ## 📄 API Specification
-The API is documented using OpenAPI (Swagger). When running locally, you can access the interactive docs at:
-http://localhost:5000/api-docs/
-https://cultural-heritage-map.onrender.com/api-docs/
+- **Interactive API Docs:** [Swagger UI](https://cultural-heritage-map.onrender.com/api-docs/)
+- **OpenAPI Spec:** Available at `/api-docs/` endpoint
