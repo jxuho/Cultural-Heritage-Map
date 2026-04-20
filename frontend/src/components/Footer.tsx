@@ -1,6 +1,6 @@
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white p-1 sm:p-2   text-center flex-shrink-0 shadow-inner">
+    <footer className="bg-gray-800 text-white p-1 sm:p-2   text-center shrink-0 shadow-inner">
       <div className="container mx-auto text-xs md:text-sm ">
         Map data &copy;
         <a

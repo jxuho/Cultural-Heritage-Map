@@ -22,8 +22,22 @@ import {
 } from "@floating-ui/react";
 import useUiStore from "../store/uiStore";
 
+interface MenuItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
+  disabled?: boolean;
+  label?: string;
+}
+
+interface MenuSeparatorProps extends React.HTMLAttributes<HTMLDivElement> {
+  label?: string;
+}
+
+interface MenuProps {
+  children: React.ReactElement<MenuItemProps | MenuSeparatorProps>[];
+}
+
 // MenuItem
-export const MenuItem = ({ children, disabled, ...props }) => {
+export const MenuItem = ({ children, disabled, ...props }: MenuItemProps) => {
   return (
     <button
       {...props}
@@ -39,7 +53,7 @@ export const MenuItem = ({ children, disabled, ...props }) => {
 
 
 // MenuSeparator
-export const MenuSeparator = (props) => {
+export const MenuSeparator = (props: MenuSeparatorProps) => {
   return (
     <div
       {...props}
@@ -50,19 +64,19 @@ export const MenuSeparator = (props) => {
 
 
 // Menu
-export const Menu = ({ children }) => {
-  const [activeIndex, setActiveIndex] = useState(null);
+export const Menu = ({ children }: MenuProps) => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const isContextMenuOpen = useUiStore((state) => state.isContextMenuOpen);
   const closeContextMenu = useUiStore((state) => state.closeContextMenu);
 
-  const listItemsRef = useRef([]);
-  const listContentRef = useRef(
+  const listItemsRef = useRef<(HTMLElement | null)[]>([]);
+  const listContentRef = useRef<string[]>(
     Children.map(children, (child) =>
       isValidElement(child) && typeof child.props.label === "string"
         ? child.props.label
         : ""
-    )
+    ) || []
   );
 
   const { refs, floatingStyles, context } = useFloating({
@@ -102,7 +116,7 @@ export const Menu = ({ children }) => {
   ]);
 
   useEffect(() => {
-    function onContextMenu(e) {
+    function onContextMenu(e: MouseEvent) {
       if (isContextMenuOpen) {
         e.preventDefault();
         refs.setPositionReference({
@@ -136,7 +150,7 @@ export const Menu = ({ children }) => {
       {isOpen && (
         <FloatingFocusManager
           context={context}
-          initialFocus={() => listItemsRef.current[0] ?? refs.floating.current}
+          initialFocus={refs.floating}
         >
           <div
             className="rounded bg-white flex flex-col overflow-hidden z-50 shadow-menu"
@@ -159,7 +173,7 @@ export const Menu = ({ children }) => {
                       listItemsRef.current[index] = node ?? null;
                     },
                     onClick: (e) => {
-                      child.props.onClick?.(e);
+                      (child.props as MenuItemProps).onClick?.(e as any);
                       setIsOpen(false);
                     },
                   })

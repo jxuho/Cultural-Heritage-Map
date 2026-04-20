@@ -1,6 +1,5 @@
-// src/components/GoToTopButton.jsx
-import React, { useState, useEffect } from 'react';
-import { FaArrowUp } from 'react-icons/fa'; // You'll need react-icons for this
+import { useState, useEffect } from 'react';
+import { FaArrowUp } from 'react-icons/fa'; 
 
 const GoToTopButton = () => {
   const [isVisible, setIsVisible] = useState(false);
