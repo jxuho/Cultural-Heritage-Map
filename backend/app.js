@@ -91,18 +91,18 @@ app.use('/api/v1/proposals', proposalRoutes);
 const swaggerDocument = YAML.load(path.join(__dirname, 'public/openapi.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// 프론트 빌드 파일 경로
-const frontendPath = path.join(__dirname, '../frontend/dist');
+// // 프론트 빌드 파일 경로
+// const frontendPath = path.join(__dirname, '../frontend/dist');
 
-// 정적 파일 서빙
-app.use(express.static(frontendPath));
+// // 정적 파일 서빙
+// app.use(express.static(frontendPath));
 
-// app.get('*', (req, res) => {
+// // app.get('*', (req, res) => {
+// //   res.sendFile(path.join(frontendPath, 'index.html'));
+// // });
+// app.get(/.*/, (req, res) => {
 //   res.sendFile(path.join(frontendPath, 'index.html'));
 // });
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
 
 app.get('/', (req, res) => {
   res.send('Message from the server: Server is Running!');
