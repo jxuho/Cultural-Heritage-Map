@@ -64,7 +64,7 @@ Discover and explore Chemnitz's cultural heritage sites with an interactive map.
 ## 🛠️ Tech Stack
 
 ### **Frontend**
-- React 18, Vite, TypeScript, TanStack Query, Zustand, Tailwind CSS, Leaflet
+- React 19, Vite, TypeScript, TanStack Query, Zustand, Tailwind CSS, Leaflet
 
 ### **Backend**
 - Node.js, Express, MongoDB Atlas, Passport.js (JWT + OAuth 2.0)
