@@ -1,7 +1,6 @@
-// components/SidePanel/NearbySitesList.jsx
 import useUiStore from "../../store/uiStore";
 
-const NearbySitesList = ({ sites, onClose }) => {
+const NearbySitesList = ({ sites, onClose }: { sites: any[]; onClose: () => void }) => {
   const openCreateForm = useUiStore((state) => state.openCreateForm);
 
   if (!sites || sites.length === 0) {
@@ -24,12 +23,12 @@ const NearbySitesList = ({ sites, onClose }) => {
     );
   }
 
-  const handleSiteClick = (site) => {
+  const handleSiteClick = (site: any) => {
     openCreateForm(site);
   };
 
   return (
-    <div className="flex-grow overflow-y-auto p-4 relative">
+    <div className="grow overflow-y-auto p-4 relative">
       {/* Close Button */}
       {onClose && (
         <div className="absolute top-4 right-4 z-10">

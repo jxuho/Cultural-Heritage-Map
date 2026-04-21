@@ -1,23 +1,52 @@
-// src/components/SidePanel/ProposalForm.jsx
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import useUiStore from "../../store/uiStore";
-// useAuthStore를 임포트하여 사용자의 역할을 가져옵니다.
 import useAuthStore from "../../store/authStore";
-import {
-  useCreateCulturalSite,
-} from "../../hooks/data/useCulturalSitesQueries";
+import { useCreateCulturalSite } from "../../hooks/data/useCulturalSitesQueries";
 import { useSubmitProposal } from "../../hooks/data/useProposalQueries";
 import { CULTURAL_CATEGORY } from "../../config/culturalSiteConfig";
+import { Point } from "leaflet";
 
-const CreateForm = () => {
+// --- Types & Interfaces ---
+interface LocationData {
+  type: Point;
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+interface FormData {
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  openingHours: string;
+  address: string;
+  website: string;
+  proposalMessage: string;
+  location: LocationData | null;
+  licenseInfo: string;
+  sourceId: string;
+  originalTags: Record<string, any>;
+}
+
+interface FormErrors {
+  name?: string;
+  category?: string;
+  address?: string;
+  proposalMessage?: string;
+  location?: string;
+}
+
+const CreateForm: React.FC = () => {
+  // --- Zustand ---
   const { createFormData, closeCreateForm, closeSidePanel } = useUiStore();
-  const { user } = useAuthStore(); // 사용자 정보 가져오기
-  const role = user?.role; // 사용자의 역할 추출
+  const { user } = useAuthStore();
+  const role = user?.role;
 
-  const submitProposalMutation = useSubmitProposal(); // 기존 제안 제출 훅
-  const createCulturalSiteMutation = useCreateCulturalSite(); // 새로운 문화 유적지 생성 훅 (관리자용)
+  // --- Mutations ---
+  const submitProposalMutation = useSubmitProposal();
+  const createCulturalSiteMutation = useCreateCulturalSite();
 
-  const [formData, setFormData] = useState({
+  // --- State ---
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
     category: "",
@@ -25,15 +54,17 @@ const CreateForm = () => {
     openingHours: "",
     address: "",
     website: "",
-    proposalMessage: "", // 일반 사용자 제안 시에만 필요
+    proposalMessage: "",
     location: null,
     licenseInfo: "",
     sourceId: "",
     originalTags: {},
   });
-  const [formErrors, setFormErrors] = useState({});
-  const [submissionError, setSubmissionError] = useState(null); // 서버 응답 에러 메시지
 
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+
+  // --- Effects ---
   useEffect(() => {
     if (createFormData) {
       setFormData({
@@ -44,8 +75,8 @@ const CreateForm = () => {
         openingHours: createFormData.openingHours || "",
         address: createFormData.address || "",
         website: createFormData.website || "",
-        proposalMessage: "", // Always start empty for the user to fill
-        location: createFormData.location,
+        proposalMessage: "",
+        location: createFormData.location || null,
         licenseInfo: createFormData.licenseInfo || "",
         sourceId: createFormData.sourceId || "",
         originalTags: createFormData.originalTags || {},
@@ -55,26 +86,32 @@ const CreateForm = () => {
     }
   }, [createFormData]);
 
-  const handleChange = (e) => {
+  // --- Handlers ---
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
-    if (formErrors[name]) {
+
+    // 에러 상태 초기화
+    if (formErrors[name as keyof FormErrors]) {
       setFormErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
     }
     setSubmissionError(null);
   };
 
-  const validateForm = () => {
-    const errors = {};
+  const validateForm = (): FormErrors => {
+    const errors: FormErrors = {};
     if (!formData.name.trim()) errors.name = "Cultural site name is required.";
     if (!formData.category.trim()) errors.category = "Category is required.";
     if (!formData.address.trim()) errors.address = "Address is required.";
-    // Admin이 아닌 경우에만 proposalMessage가 필수
+
     if (role !== "admin" && !formData.proposalMessage.trim())
       errors.proposalMessage = "Proposal message is required.";
+
     if (
       !formData.location ||
       !formData.location.coordinates ||
@@ -85,7 +122,7 @@ const CreateForm = () => {
     return errors;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmissionError(null);
 
@@ -99,7 +136,10 @@ const CreateForm = () => {
       name: formData.name,
       description: formData.description,
       category: formData.category,
-      location: formData.location,
+      location: {
+        type: "Point" as const,
+        coordinates: formData.location!.coordinates,
+      },
       address: formData.address,
       website: formData.website,
       imageUrl: formData.imageUrl,
@@ -111,13 +151,11 @@ const CreateForm = () => {
 
     try {
       if (role === "admin") {
-        // 관리자인 경우, 즉시 문화 유적지 추가 엔드포인트 호출
         await createCulturalSiteMutation.mutateAsync(commonSiteData);
         alert("New cultural site added successfully by admin!");
       } else {
-        // 일반 사용자인 경우, 제안 제출 엔드포인트 호출
         const proposalBody = {
-          proposalType: "create",
+          proposalType: "create" as const,
           proposalMessage: formData.proposalMessage,
           ...commonSiteData,
         };
@@ -126,7 +164,7 @@ const CreateForm = () => {
       }
       closeCreateForm();
       closeSidePanel();
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -135,12 +173,15 @@ const CreateForm = () => {
     }
   };
 
-  // 현재 제출 상태를 결정합니다.
+  // --- Derived State ---
   const isSubmitting =
     role === "admin"
-      ? createCulturalSiteMutation.isLoading
-      : submitProposalMutation.isLoading;
+      ? createCulturalSiteMutation.isPending // v5에서는 isLoading 대신 isPending 사용 권장
+      : submitProposalMutation.isPending;
 
+  const categories = CULTURAL_CATEGORY;
+
+  // --- Rendering ---
   if (isSubmitting) {
     return (
       <div className="p-4 text-gray-600 text-center relative">
@@ -170,8 +211,6 @@ const CreateForm = () => {
     );
   }
 
-  const categories = CULTURAL_CATEGORY;
-
   return (
     <div className="flex-grow overflow-y-auto p-4 relative">
       <div className="absolute top-4 right-4 z-10">
@@ -192,6 +231,7 @@ const CreateForm = () => {
           ? "Add New Cultural Site (Admin)"
           : "Propose New Cultural Site"}
       </h2>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {Object.keys(formErrors).length > 0 && (
           <div
@@ -200,6 +240,7 @@ const CreateForm = () => {
           >
             <strong className="font-bold">Validation Error!</strong>
             <span className="block sm:inline">
+              {" "}
               Please correct the highlighted fields.
             </span>
           </div>
@@ -215,7 +256,7 @@ const CreateForm = () => {
           </div>
         )}
 
-        {/* Editable Fields */}
+        {/* Name */}
         <div>
           <label
             htmlFor="name"
@@ -236,6 +277,7 @@ const CreateForm = () => {
           )}
         </div>
 
+        {/* Description */}
         <div>
           <label
             htmlFor="description"
@@ -248,11 +290,12 @@ const CreateForm = () => {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            rows="3"
+            rows={3}
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
           ></textarea>
         </div>
 
+        {/* Category */}
         <div>
           <label
             htmlFor="category"
@@ -279,6 +322,7 @@ const CreateForm = () => {
           )}
         </div>
 
+        {/* Image URL */}
         <div>
           <label
             htmlFor="imageUrl"
@@ -297,6 +341,7 @@ const CreateForm = () => {
           />
         </div>
 
+        {/* Opening Hours */}
         <div>
           <label
             htmlFor="openingHours"
@@ -315,6 +360,7 @@ const CreateForm = () => {
           />
         </div>
 
+        {/* Address */}
         <div>
           <label
             htmlFor="address"
@@ -335,6 +381,7 @@ const CreateForm = () => {
           )}
         </div>
 
+        {/* Website */}
         <div>
           <label
             htmlFor="website"
@@ -353,32 +400,36 @@ const CreateForm = () => {
           />
         </div>
 
-        {/* Non-editable fields (display only) */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Latitude (Read-Only)
-          </label>
-          <input
-            type="text"
-            value={formData.location?.coordinates[1] || ""}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 cursor-not-allowed"
-            readOnly
-          />
-          {formErrors.location && (
-            <p className="text-red-500 text-xs mt-1">{formErrors.location}</p>
-          )}
+        {/* Location Info (Read-Only) */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Latitude (Read-Only)
+            </label>
+            <input
+              type="text"
+              value={formData.location?.coordinates[1] || ""}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 cursor-not-allowed"
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Longitude (Read-Only)
+            </label>
+            <input
+              type="text"
+              value={formData.location?.coordinates[0] || ""}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 cursor-not-allowed"
+              readOnly
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Longitude (Read-Only)
-          </label>
-          <input
-            type="text"
-            value={formData.location?.coordinates[0] || ""}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 cursor-not-allowed"
-            readOnly
-          />
-        </div>
+        {formErrors.location && (
+          <p className="text-red-500 text-xs mt-1">{formErrors.location}</p>
+        )}
+
+        {/* Source ID */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Original OSM ID (Read-Only)
@@ -391,7 +442,7 @@ const CreateForm = () => {
           />
         </div>
 
-        {/* Proposal Message (Conditional: only for non-admins) */}
+        {/* Proposal Message */}
         {role !== "admin" && (
           <div>
             <label
@@ -405,7 +456,7 @@ const CreateForm = () => {
               name="proposalMessage"
               value={formData.proposalMessage}
               onChange={handleChange}
-              rows="4"
+              rows={4}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Please provide a detailed reason for proposing this cultural site."
             ></textarea>
@@ -419,14 +470,14 @@ const CreateForm = () => {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
           disabled={isSubmitting}
         >
           {isSubmitting
             ? "Submitting..."
             : role === "admin"
-            ? "Add New Cultural Site"
-            : "Submit Proposal"}
+              ? "Add New Cultural Site"
+              : "Submit Proposal"}
         </button>
       </form>
     </div>

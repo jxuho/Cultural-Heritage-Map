@@ -4,7 +4,7 @@ import useUiStore from "../../store/uiStore";
 import useViewport from "./useViewPort";
 
 // detailRef를 인자로 받도록 변경합니다.
-const useSidePanelResizer = (detailRef) => {
+const useSidePanelResizer = (detailRef: React.RefObject<HTMLDivElement>) => {
   const sidePanelWidth = useUiStore((state) => state.sidePanelWidth);
   const setSidePanelWidth = useUiStore((state) => state.setSidePanelWidth);
   const { width: viewportWidth } = useViewport();
@@ -29,7 +29,7 @@ const useSidePanelResizer = (detailRef) => {
   }, [isResizing, resizerPosition, setSidePanelWidth]);
 
   const resizeHandler = useCallback(
-    (event) => {
+    (event: MouseEvent) => {
       // 주입받은 detailRef를 사용합니다.
       if (!isResizing || !detailRef.current) return;
       let calculatedPosition =

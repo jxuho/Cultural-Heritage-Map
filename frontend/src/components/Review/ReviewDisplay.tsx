@@ -1,11 +1,17 @@
 import StarIcon from "../StarIcon";
-import useUiStore from "../../store/uiStore"; 
+import useUiStore from "../../store/uiStore";
 
-const ReviewDisplay = ({ reviews, currentUser }) => {
+const ReviewDisplay = ({
+  reviews,
+  currentUser,
+}: {
+  reviews: any[];
+  currentUser: any;
+}) => {
   const openUserProfile = useUiStore((state) => state.openUserProfile);
 
   // Handler for clicking on user info
-  const handleUserClick = (user) => {
+  const handleUserClick = (user: any) => {
     openUserProfile(user._id);
   };
 

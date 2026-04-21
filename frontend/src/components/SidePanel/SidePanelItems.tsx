@@ -1,4 +1,3 @@
-// src/components/SidePanel/SidePanelItems.jsx
 import StarIcon from "../StarIcon";
 import ReviewForm from "../Review/ReviewForm";
 import ReviewDisplay from "../Review/ReviewDisplay";
@@ -16,8 +15,19 @@ import {
 } from "../../hooks/data/useReviewQueries";
 import useUiStore from "../../store/uiStore";
 import ErrorMessage from "../ErrorMessage";
+import { Place } from "@/types/place";
 
-const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
+interface SidePanelItemsProps {
+  isReviewsExpanded: boolean;
+  toggleReviewsExpansion: () => void;
+  onClose: () => void;
+  selectedPlaceData: Place | null;
+}
+
+const SidePanelItems = ({
+  isReviewsExpanded,
+  toggleReviewsExpansion,
+}: SidePanelItemsProps) => {
   // --- Zustand (UI State Management) ---
   const currentUser = useAuthStore((state) => state.user);
   const uiSelectedPlace = useUiStore((state) => state.selectedPlace);
@@ -26,7 +36,7 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
 
   // --- TanStack Query: Data Fetching Hooks (Local to SidePanelItems) ---
   const { data: selectedPlaceData } = useCulturalSiteDetail(
-    uiSelectedPlace?._id
+    uiSelectedPlace?._id,
   );
 
   const {
@@ -44,35 +54,58 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
 
   // --- Derived State ---
   const userReview =
-    reviews.find((review) => review.user?._id === currentUser?._id) || null;
-  const otherReviews = reviews.filter(
-    (review) => review.user?._id !== currentUser?._id
-  );
+    reviews.find((review) => {
+      return (
+        typeof review.user !== "string" && review.user?._id === currentUser?._id
+      );
+    }) || null;
+  const otherReviews = reviews.filter((review) => {
+    if (review.user && typeof review.user !== "string") {
+      return review.user._id !== currentUser?._id;
+    }
+
+    if (typeof review.user === "string") {
+      return review.user !== currentUser?._id;
+    }
+
+    return true;
+  });
   const isSelectedPlaceFavorite = myFavorites.some(
-    (obj) => obj._id === uiSelectedPlace?._id
+    (obj) => obj._id === uiSelectedPlace?._id,
   );
 
   // --- Callbacks for Child Components ---
   const handleFavoriteChange = useCallback(
-    async (newStatus) => {
+    async (newStatus: boolean) => {
       if (!currentUser) {
         alert("You can add favorite after sign in.");
         return;
       }
       await favoriteMutation.mutateAsync({
         actionType: newStatus ? "add" : "delete",
-        culturalSiteId: uiSelectedPlace._id,
+        culturalSiteId: uiSelectedPlace?._id || "",
       });
     },
-    [favoriteMutation, uiSelectedPlace?._id, currentUser]
+    [favoriteMutation, uiSelectedPlace?._id, currentUser],
   );
 
   const handleReviewActionCompleted = useCallback(
-    async (actionType, newRating, oldRating, comment) => {
+    async (
+      actionType: "create" | "update" | "delete",
+      newRating: number | null, // null 허용
+      oldRating: number | null, // oldRating 추가
+      comment?: string, // 선택적 인자로 변경
+    ) => {
       if (!currentUser) {
-        alert("Please sign in in order to create/update/delete review.");
+        alert("Please sign in...");
         return;
       }
+
+      if (!uiSelectedPlace?._id) {
+        console.error("No place selected");
+        return;
+      }
+
       await reviewMutation.mutateAsync({
         actionType,
         placeId: uiSelectedPlace._id,
@@ -80,11 +113,14 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
         reviewData:
           actionType === "delete"
             ? undefined
-            : { rating: newRating, comment: comment },
-        oldRating: oldRating,
+            : {
+                rating: newRating ?? 0, // null일 경우 기본값 처리
+                comment: comment ?? "",
+              },
+        oldRating: oldRating ?? undefined,
       });
     },
-    [reviewMutation, uiSelectedPlace?._id, userReview, currentUser]
+    [reviewMutation, uiSelectedPlace?._id, userReview?._id, currentUser],
   );
 
   const handleNameClick = useCallback(() => {
@@ -143,13 +179,14 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
           </h3>
           {selectedPlaceData.averageRating !== undefined &&
             selectedPlaceData.averageRating !== null &&
+            selectedPlaceData.reviewCount != undefined &&
             selectedPlaceData.reviewCount > 0 && (
               <div className="flex items-center">
                 <div className="flex text-yellow-500 text-base mr-2">
                   {[...Array(5)].map((_, i) => (
                     <StarIcon
                       key={i}
-                      rating={selectedPlaceData.averageRating}
+                      rating={selectedPlaceData.averageRating!}
                       index={i}
                       className="w-5 h-5"
                       displayMode="averageRating"
@@ -202,10 +239,7 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
           {!loadingReviews && !reviewFetchError && reviews.length === 0 && (
             <p className="p-4 text-center text-gray-500">No reviews yet.</p>
           )}
-          <ReviewDisplay
-            reviews={otherReviews}
-            currentUser={currentUser}
-          />
+          <ReviewDisplay reviews={otherReviews} currentUser={currentUser} />
         </div>
       ) : (
         <div className="flex-grow p-4 overflow-y-auto">
@@ -256,7 +290,9 @@ const SidePanelItems = ({ isReviewsExpanded, toggleReviewsExpansion }) => {
             )}
             {selectedPlaceData.openingHours && (
               <p className="text-sm text-gray-700 mb-2 leading-relaxed">
-                <span className="font-semibold text-blue-600">Opening Hours: </span>
+                <span className="font-semibold text-blue-600">
+                  Opening Hours:{" "}
+                </span>
                 {selectedPlaceData.openingHours}
               </p>
             )}

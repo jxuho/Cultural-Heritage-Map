@@ -1,14 +1,42 @@
-// src/components/SidePanel/UpdateForm.jsx
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import useUiStore from "../../store/uiStore";
 import useAuthStore from "../../store/authStore";
-import {
-  useUpdateCulturalSite,
-} from "../../hooks/data/useCulturalSitesQueries";
+import { useUpdateCulturalSite } from "../../hooks/data/useCulturalSitesQueries";
 import { useSubmitProposal } from "../../hooks/data/useProposalQueries";
 import { CULTURAL_CATEGORY } from "../../config/culturalSiteConfig";
+import { Place } from "../../types/place";
 
-const UpdateForm = () => {
+// 폼 내부 상태를 위한 인터페이스
+interface UpdateFormData {
+  _id: string;
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  openingHours: string;
+  address: string;
+  website: string;
+  proposalMessage: string;
+  location: {
+    type: "Point";
+    coordinates: number[];
+  } | null;
+  licenseInfo: string;
+  sourceId: string;
+  originalTags: Record<string, any>;
+  initialData: Place | null;
+}
+
+interface FormErrors {
+  name?: string;
+  category?: string;
+  address?: string;
+  location?: string;
+  proposalMessage?: string;
+  noChanges?: string;
+}
+
+const UpdateForm: React.FC = () => {
   const { updateFormData, closeUpdateForm, closeSidePanel } = useUiStore();
   const { user } = useAuthStore();
   const role = user?.role;
@@ -16,7 +44,7 @@ const UpdateForm = () => {
   const submitProposalMutation = useSubmitProposal();
   const updateCulturalSiteMutation = useUpdateCulturalSite();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UpdateFormData>({
     _id: "",
     name: "",
     description: "",
@@ -32,59 +60,62 @@ const UpdateForm = () => {
     originalTags: {},
     initialData: null,
   });
-  const [formErrors, setFormErrors] = useState({});
-  const [submissionError, setSubmissionError] = useState(null);
-  const [proposalType, setProposalType] = useState("update");
 
-  // New state to hold specific backend error messages
-  const [backendError, setBackendError] = useState(null);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [proposalType, setProposalType] = useState<"update" | "delete">("update");
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   useEffect(() => {
     if (updateFormData) {
+      const data = updateFormData as Place;
       setFormData({
-        _id: updateFormData._id || "",
-        name: updateFormData.name || "",
-        description: updateFormData.description || "",
-        category: updateFormData.category || "",
-        imageUrl: updateFormData.imageUrl || "",
-        openingHours: updateFormData.openingHours || "",
-        address: updateFormData.address || "",
-        website: updateFormData.website || "",
+        _id: data._id || "",
+        name: data.name || "",
+        description: data.description || "",
+        category: data.category || "",
+        imageUrl: data.imageUrl || "",
+        openingHours: data.openingHours || "",
+        address: data.address || "",
+        website: data.website || "",
         proposalMessage: "",
-        location: updateFormData.location,
-        licenseInfo: updateFormData.licenseInfo || "",
-        sourceId: updateFormData.sourceId || "",
-        originalTags: updateFormData.originalTags || {},
-        initialData: updateFormData,
+        location: data.location ? { ...data.location, type: "Point" } : null,
+        licenseInfo: data.licenseInfo || "",
+        sourceId: data.sourceId || "",
+        originalTags: data.originalTags || {},
+        initialData: data,
       });
       setFormErrors({});
       setSubmissionError(null);
-      setBackendError(null); // Reset backend error when form data changes
+      setBackendError(null);
       setProposalType("update");
     }
   }, [updateFormData]);
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
-    if (formErrors[name]) {
+    if (formErrors[name as keyof FormErrors]) {
       setFormErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
     }
     setSubmissionError(null);
-    setBackendError(null); // Clear backend error on input change
+    setBackendError(null);
   };
 
-  const validateForm = () => {
-    const errors = {};
+  const validateForm = (): FormErrors => {
+    const errors: FormErrors = {};
     if (!formData.name.trim() && proposalType === "update")
       errors.name = "Cultural site name is required.";
     if (!formData.category.trim() && proposalType === "update")
       errors.category = "Category is required.";
     if (!formData.address.trim() && proposalType === "update")
       errors.address = "Address is required.";
+    
     if (
       (!formData.location ||
         !formData.location.coordinates ||
@@ -98,13 +129,11 @@ const UpdateForm = () => {
       errors.proposalMessage = "Proposal message is required.";
     }
 
-    if (role !== "admin" && proposalType === "update") {
-      const hasChanges = Object.keys(formData).some((key) => {
-        if (
-          ["^id", "proposalMessage", "initialData", "proposalType"].includes(
-            key
-          )
-        ) {
+    if (role !== "admin" && proposalType === "update" && formData.initialData) {
+      // 원본 로직의 변경 감지 (일부 필드 제외)
+      const hasChanges = (Object.keys(formData) as Array<keyof UpdateFormData>).some((key) => {
+        // 원본의 "^id" 오타 수정 포함 (_id)
+        if (["_id", "proposalMessage", "initialData", "proposalType"].includes(key)) {
           return false;
         }
         if (key === "location") {
@@ -115,22 +144,21 @@ const UpdateForm = () => {
             currentCoords?.[1] !== initialCoords?.[1]
           );
         }
-        return formData[key] !== formData.initialData[key];
+        // 타입 안전성을 위해 인덱스 시그니처 대응
+        return formData[key] !== (formData.initialData as any)[key];
       });
 
-      if (!hasChanges && !errors.proposalMessage) {
-        // Ensure proposal message is there if no other changes
-        errors.noChanges =
-          "No changes detected. Please modify a field or provide a proposal message.";
+      if (!hasChanges && !formData.proposalMessage.trim()) {
+        errors.noChanges = "No changes detected. Please modify a field or provide a proposal message.";
       }
     }
     return errors;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmissionError(null);
-    setBackendError(null); // Clear any previous backend errors on new submission
+    setBackendError(null);
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -156,16 +184,17 @@ const UpdateForm = () => {
       if (role === "admin") {
         await updateCulturalSiteMutation.mutateAsync({
           culturalSiteId: formData._id,
-          updateData: currentSiteData,
+          updateData: currentSiteData as Partial<Place>,
         });
         alert("Cultural site updated successfully by admin!");
       } else {
-        let proposalBody;
+        let proposalBody: any;
 
         if (proposalType === "update") {
-          const proposedChanges = {};
+          const proposedChanges: any = {};
           for (const key in currentSiteData) {
-            if (key === "location") {
+            const k = key as keyof typeof currentSiteData;
+            if (k === "location") {
               const currentCoords = currentSiteData.location?.coordinates;
               const initialCoords = formData.initialData?.location?.coordinates;
               if (
@@ -174,8 +203,8 @@ const UpdateForm = () => {
               ) {
                 proposedChanges.location = currentSiteData.location;
               }
-            } else if (currentSiteData[key] !== formData.initialData[key]) {
-              proposedChanges[key] = currentSiteData[key];
+            } else if (currentSiteData[k] !== (formData.initialData as any)[k]) {
+              proposedChanges[k] = currentSiteData[k];
             }
           }
 
@@ -185,7 +214,7 @@ const UpdateForm = () => {
             culturalSite: formData._id,
             ...proposedChanges,
           };
-        } else if (proposalType === "delete") {
+        } else {
           proposalBody = {
             proposalType: "delete",
             proposalMessage: formData.proposalMessage,
@@ -198,17 +227,12 @@ const UpdateForm = () => {
       }
       closeUpdateForm();
       closeSidePanel();
-    } catch (error) {
-      // Check for the specific duplicate key error message from MongoDB
-      if (
-        error.response?.data?.message &&
-        error.response.data.message.includes("E11000")
-      ) {
+    } catch (error: any) {
+      if (error.response?.data?.message?.includes("E11000")) {
         setBackendError(
           "A pending proposal for this site already exists from your account. Please wait for it to be processed."
         );
       } else {
-        // Fallback for other errors
         const errorMessage =
           error.response?.data?.message ||
           error.message ||
@@ -218,10 +242,10 @@ const UpdateForm = () => {
     }
   };
 
-  const isSubmitting =
-    role === "admin"
-      ? updateCulturalSiteMutation.isLoading
-      : submitProposalMutation.isLoading;
+  // React Query 버전에 따라 isLoading 또는 isPending 사용
+  const isSubmitting = role === "admin"
+    ? updateCulturalSiteMutation.isPending
+    : submitProposalMutation.isPending;
 
   if (isSubmitting) {
     return (
@@ -252,8 +276,6 @@ const UpdateForm = () => {
     );
   }
 
-  const categories = CULTURAL_CATEGORY;
-
   return (
     <div className="flex-grow overflow-y-auto p-4 relative">
       <div className="absolute top-4 right-4 z-10">
@@ -275,7 +297,6 @@ const UpdateForm = () => {
           : "Propose Cultural Site Modification"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {console.log(formErrors)}
         {(Object.keys(formErrors).length > 0 ||
           submissionError ||
           backendError) && (
@@ -297,13 +318,12 @@ const UpdateForm = () => {
               !backendError &&
               !submissionError && (
                 <span className="block sm:inline">
-                  Please correct the highlighted fields.
+                  {" "}Please correct the highlighted fields.
                 </span>
               )}
           </div>
         )}
 
-        {/* Display the ID of the site being updated/modified */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Site ID (Read-Only)
@@ -316,14 +336,10 @@ const UpdateForm = () => {
           />
         </div>
 
-        {/* Editable Fields (conditionally disabled for delete proposal) */}
         <fieldset disabled={proposalType === "delete"}>
           <legend className="sr-only">Cultural Site Details</legend>
           <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
               Name *
             </label>
             <input
@@ -340,10 +356,7 @@ const UpdateForm = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
               Description
             </label>
             <textarea
@@ -351,16 +364,13 @@ const UpdateForm = () => {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              rows="3"
+              rows={3}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
             ></textarea>
           </div>
 
           <div>
-            <label
-              htmlFor="category"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700">
               Category *
             </label>
             <select
@@ -371,7 +381,7 @@ const UpdateForm = () => {
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
             >
               <option value="">Select Category</option>
-              {categories.map((cat) => (
+              {CULTURAL_CATEGORY.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat.replace(/_/g, " ")}
                 </option>
@@ -383,10 +393,7 @@ const UpdateForm = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="imageUrl"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
               Image URL
             </label>
             <input
@@ -401,10 +408,7 @@ const UpdateForm = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="openingHours"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="openingHours" className="block text-sm font-medium text-gray-700">
               Opening Hours
             </label>
             <input
@@ -419,10 +423,7 @@ const UpdateForm = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="address"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="address" className="block text-sm font-medium text-gray-700">
               Address *
             </label>
             <input
@@ -439,10 +440,7 @@ const UpdateForm = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="website"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="website" className="block text-sm font-medium text-gray-700">
               Website
             </label>
             <input
@@ -456,7 +454,6 @@ const UpdateForm = () => {
             />
           </div>
 
-          {/* Non-editable fields (display only) */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Latitude (Read-Only)
@@ -495,13 +492,9 @@ const UpdateForm = () => {
           </div>
         </fieldset>
 
-        {/* Proposal Message (Conditional: only for non-admins) */}
         {role !== "admin" && (
           <div>
-            <label
-              htmlFor="proposalMessage"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="proposalMessage" className="block text-sm font-medium text-gray-700">
               Proposal Message *
             </label>
             <textarea
@@ -509,7 +502,7 @@ const UpdateForm = () => {
               name="proposalMessage"
               value={formData.proposalMessage}
               onChange={handleChange}
-              rows="4"
+              rows={4}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder={
                 proposalType === "update"

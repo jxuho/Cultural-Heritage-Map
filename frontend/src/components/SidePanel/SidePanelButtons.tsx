@@ -1,11 +1,14 @@
-// src/components/SidePanel/SidePanelButtons.jsx
+import React from "react";
 import useAuthStore from "../../store/authStore";
 import useUiStore from "../../store/uiStore";
-import { useCulturalSiteDetail, useDeleteCulturalSite } from "../../hooks/data/useCulturalSitesQueries"; // Direct imports
+import {
+  useCulturalSiteDetail,
+  useDeleteCulturalSite,
+} from "../../hooks/data/useCulturalSitesQueries";
 
-const SidePanelButtons = () => {
-  // Directly access state and actions from stores
-  const { user } = useAuthStore();
+const SidePanelButtons: React.FC = () => {
+  // --- Zustand (Auth & UI State) ---
+  const user = useAuthStore((state) => state.user);
   const role = user?.role;
 
   const {
@@ -14,46 +17,47 @@ const SidePanelButtons = () => {
     closeModal,
     isCreateFormOpen,
     isUpdateFormOpen,
-    selectedPlace: uiSelectedPlace, // Use a distinct name to avoid confusion with selectedPlaceData
-    handleCloseAndCancel, // Action from store
-    isUserProfileOpen
+    selectedPlace: uiSelectedPlace,
+    handleCloseAndCancel,
+    isUserProfileOpen,
   } = useUiStore();
 
+  // --- TanStack Query: Mutation ---
   const deleteCulturalSiteMutation = useDeleteCulturalSite();
 
-  // Fetch selected cultural site data directly here if needed for button logic
-  const { data: selectedPlaceData } = useCulturalSiteDetail(uiSelectedPlace?._id, {
-    enabled: !!uiSelectedPlace?._id // Only fetch if a place is selected
-  });
+  // --- TanStack Query: Data Fetching ---
+  const { data: selectedPlaceData } = useCulturalSiteDetail(
+    uiSelectedPlace?._id,
+  );
 
   // Handler for admin's "Edit" button
-  const editThisSiteButtonClickHandler = () => {
+  const editThisSiteButtonClickHandler = (): void => {
     if (selectedPlaceData) {
       openUpdateForm(selectedPlaceData);
     }
   };
 
   // Handler for non-admin's "Suggest an edit" button
-  const suggestEditButtonClickHandler = () => {
+  const suggestEditButtonClickHandler = (): void => {
     if (selectedPlaceData) {
-      openUpdateForm(selectedPlaceData); // Reuses the same update form
+      openUpdateForm(selectedPlaceData);
     }
   };
 
   // Handler for admin's "Delete" button
-  const deleteThisSiteButtonClickHandler = () => {
+  const deleteThisSiteButtonClickHandler = (): void => {
     if (!selectedPlaceData || !selectedPlaceData._id) {
       console.error("No site selected for deletion or missing ID.");
       return;
     }
 
-    const confirmDelete = async () => {
+    const confirmDelete = async (): Promise<void> => {
       try {
         await deleteCulturalSiteMutation.mutateAsync(selectedPlaceData._id);
         alert("Cultural site deleted successfully!");
         closeModal();
-        handleCloseAndCancel(null); // Use the centralized handler
-      } catch (error) {
+        handleCloseAndCancel(null);
+      } catch (error: any) {
         const errorMessage =
           error.response?.data?.message ||
           error.message ||
@@ -86,12 +90,16 @@ const SidePanelButtons = () => {
             Cancel
           </button>
         </div>
-      </div>
+      </div>,
     );
   };
 
-  // Only show these buttons if no form (create/update) is open
-  const showButtons = selectedPlaceData && !isCreateFormOpen && !isUpdateFormOpen && !isUserProfileOpen;
+  // UI 노출 조건 계산
+  const showButtons =
+    !!selectedPlaceData &&
+    !isCreateFormOpen &&
+    !isUpdateFormOpen &&
+    !isUserProfileOpen;
 
   if (!showButtons) {
     return null;

@@ -1,4 +1,3 @@
-// src/components/SidePanel/SidePanel.jsx (Modified for prop reduction)
 import { useEffect, useRef } from "react";
 import useUiStore from "../../store/uiStore";
 import Resizer from "./SidePanelResizer";
@@ -19,8 +18,8 @@ const SidePanel = () => {
   const handleCloseAndCancel = useUiStore((state) => state.handleCloseAndCancel); // Get action from store
 
   // --- useSidePanelResizer Hook ---
-  const detailRef = useRef();
-  const { sidePanelWidth } = useSidePanelResizer(detailRef);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const { sidePanelWidth } = useSidePanelResizer(detailRef as React.RefObject<HTMLDivElement>);
 
   // --- Effects ---
   useEffect(() => {
@@ -64,7 +63,7 @@ const SidePanel = () => {
           "0px 1.2px 3.6px rgba(0,0,0,0.1), 0px 6.4px 14.4px rgba(0,0,0,0.1)",
       }}
     >
-      <Resizer detailRef={detailRef} />
+      <Resizer detailRef={detailRef as React.RefObject<HTMLDivElement>} />
       <SidePanelContent /> 
       <SidePanelButtons /> 
     </div>

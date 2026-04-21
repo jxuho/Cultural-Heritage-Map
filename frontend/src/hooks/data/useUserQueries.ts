@@ -60,7 +60,7 @@ export const useDeleteMyAccount = () => {
 /**
  * fetch user information by user ID
  */
-export const useUserById = (userId: string | undefined) => {
+export const useUserById = (userId: string | undefined | null) => {
   return useQuery<User | null, Error>({
     queryKey: ['user', userId],
     queryFn: () => fetchUserById(userId!), 

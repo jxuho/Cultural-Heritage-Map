@@ -2,7 +2,7 @@ import React from 'react';
 
 // Props 인터페이스 정의
 interface StarIconProps {
-  rating: number;
+  rating: number; 
   index: number;
   className?: string;
   onClick?: (event: React.MouseEvent<SVGSVGElement>) => void;

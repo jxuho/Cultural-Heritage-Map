@@ -28,7 +28,7 @@ export const useAllCulturalSites = (params?: Record<string, any>) => {
 /**
  * fetch a specific cultural site by ID
  */
-export const useCulturalSiteDetail = (id: string | undefined) => {
+export const useCulturalSiteDetail = (id: string | undefined | null) => {
   return useQuery<Place | null, ApiError>({
     queryKey: ['culturalSite', id],
     queryFn: () => fetchCulturalSiteById(id!),

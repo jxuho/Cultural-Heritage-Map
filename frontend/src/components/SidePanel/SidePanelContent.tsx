@@ -1,5 +1,4 @@
-// src/components/SidePanel/SidePanelContent.jsx
-import React, { useState } from 'react'; 
+import { useState } from 'react'; 
 import useUiStore from "../../store/uiStore";
 import { useCulturalSiteDetail } from "../../hooks/data/useCulturalSitesQueries";
 import SidePanelSkeleton from "./SidePanelSkeleton";

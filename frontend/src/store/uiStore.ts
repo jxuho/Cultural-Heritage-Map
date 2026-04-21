@@ -60,7 +60,7 @@ interface UiState {
   closeUpdateForm: () => void;
 
   // actions
-  handleCloseAndCancel: (queryKeyToCancel?: string) => void;
+  handleCloseAndCancel: (queryKeyToCancel?: string | null) => void;
 
   // jump to place
   jumpToPlace: Place | null;

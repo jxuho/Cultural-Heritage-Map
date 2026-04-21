@@ -1,6 +1,9 @@
-// components/SidePanel/SidePanelSkeleton.jsx
+interface SidePanelSkeletonProps {
+  onClose?: () => void;
+}
 
-const SidePanelSkeleton = ({ onClose }) => {
+
+const SidePanelSkeleton = ({ onClose }: SidePanelSkeletonProps) => {
   return (
     <div className="p-4 animate-pulse relative">
       {/* Close Button */}

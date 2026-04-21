@@ -27,12 +27,11 @@ const MyReviews = () => {
   const reviewMutation = useReviewMutation(); // Call the custom hook
 
   const handleReviewActionCompleted = useCallback(
-    async (actionType, newRating, oldRating, comment) => {
+    async (actionType, newRating, comment) => {
       // Find the current review being acted upon to get its culturalSite._id
       const targetReview = reviews.find((r) => r._id === expandedReviewId);
       const placeIdForAction = targetReview?.culturalSite._id;
       const reviewIdForAction = expandedReviewId;
-      const oldRatingOfTargetReview = targetReview?.rating; // Get old rating directly from the fetched review
 
       if (!placeIdForAction) {
         alert("Can't get cultural site data.");
@@ -47,7 +46,6 @@ const MyReviews = () => {
           actionType === "delete"
             ? undefined
             : { rating: newRating, comment: comment },
-        oldRating: oldRatingOfTargetReview, // Pass oldRating to the mutation for manual cache update if needed
       });
 
       // This state update should remain in the component, not in the generic hook
