@@ -43,7 +43,7 @@ const Modal: React.FC = () => {
 
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/30"
+      className="fixed inset-0 z-1000 flex items-center justify-center bg-black/30"
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         // Cast e.target to Node to achieve type compatibility with the contains method.
         if (modalRef.current && !modalRef.current.contains(e.target as Node)) {

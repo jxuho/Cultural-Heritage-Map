@@ -78,17 +78,17 @@ const MapCenterUpdater = () => {
 
 // MapComponent
 const MapComponent = () => {
-  const mapRef = useRef(null); 
+  const mapRef = useRef(null);
 
   const openSidePanel = useUiStore((state) => state.openSidePanel);
   const handleOpenSidePanel = useCallback(
     (site: Place) => {
       openSidePanel(site);
     },
-    [openSidePanel]
+    [openSidePanel],
   );
   const selectedCategories = useFilterStore(
-    (state) => state.selectedCategories
+    (state) => state.selectedCategories,
   );
   const selectedPlace = useUiStore((state) => state.selectedPlace);
 
@@ -100,7 +100,7 @@ const MapComponent = () => {
   } = useAllCulturalSites();
 
   const searchQuery = useFilterStore((state) =>
-    state.searchQuery.toLowerCase()
+    state.searchQuery.toLowerCase(),
   );
 
   // Include all information, including address

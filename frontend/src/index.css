@@ -47,3 +47,10 @@ body {
 *:focus {
   outline: none;
 }
+
+
+.leaflet-tile {
+    outline: 2px solid transparent;
+    margin-left: -2px;
+
+}
