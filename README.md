@@ -1,4 +1,4 @@
-# 🏛️ Cultural Heritage Map
+# 🏛️ Cultural Heritage Map (Solo Project)
 
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-black?style=flat-square&logo=vercel)](https://cultural-heritage-map.vercel.app/)
 [![Render](https://img.shields.io/badge/Backend-Render-blue?style=flat-square&logo=render)](https://cultural-heritage-map.onrender.com/)
