@@ -1,9 +1,13 @@
 # 🏛️ Cultural Heritage Map
 
-[![Vercel](https://img.shields.io/badge/Frontend-Vercel-black?style=for-the-badge&logo=vercel)](https://cultural-heritage-map.vercel.app/)
-[![Render](https://img.shields.io/badge/Backend-Render-blue?style=for-the-badge&logo=render)](https://cultural-heritage-map.onrender.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vercel](https://img.shields.io/badge/Frontend-Vercel-black?style=flat-square&logo=vercel)](https://cultural-heritage-map.vercel.app/)
+[![Render](https://img.shields.io/badge/Backend-Render-blue?style=flat-square&logo=render)](https://cultural-heritage-map.onrender.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+![Node.js](https://img.shields.io/badge/Node.js-Backend-339933?style=flat-square&logo=node.js&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?style=flat-square&logo=leaflet&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-Styling-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 
 Discover and explore Chemnitz's cultural heritage sites with an interactive map. Built as a full-stack web application with user authentication, admin workflows(RBAC), and real-time data integration.
 
