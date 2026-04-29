@@ -3,8 +3,9 @@ import UsersManagementPage from "./UsersManagementPage";
 import { useAllUsers } from "../../hooks/data/useUserQueries";
 import useAuthStore from "../../store/authStore";
 import { MemoryRouter } from "react-router";
+import { User } from "@/types/user";
 
-// 1. Mock up the required modules
+// Mock up the required modules
 vi.mock("../../hooks/data/useUserQueries", () => ({
   useAllUsers: vi.fn(),
 }));
@@ -27,32 +28,47 @@ vi.mock("../BackButton", () => ({
 }));
 
 describe("UsersManagementPage", () => {
-  const mockCurrentUser = {
+  const mockCurrentUser: User = {
     _id: "admin-id",
     username: "AdminUser",
+    email: "admin@test.com",
+    googleId: "google-admin-12345",
     role: "admin",
+    favoriteSites: [],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2023-01-01T00:00:00Z",
   };
-  const mockUsers = [
+
+  const mockUsers: User[] = [
     {
       _id: "admin-id",
       username: "AdminUser",
-      role: "admin",
       email: "admin@test.com",
-      createdAt: "2023-01-01",
+      googleId: "google-admin-123",
+      role: "admin",
+      favoriteSites: [],
+      createdAt: "2023-01-01T00:00:00Z",
+      updatedAt: "2023-01-01T00:00:00Z",
     },
     {
       _id: "user-1",
       username: "Zebra",
-      role: "user",
       email: "zebra@test.com",
-      createdAt: "2023-02-01",
+      googleId: "google-zebra-456",
+      role: "user",
+      favoriteSites: ["site-1"],
+      createdAt: "2023-02-01T00:00:00Z",
+      updatedAt: "2023-02-01T00:00:00Z",
     },
     {
       _id: "user-2",
       username: "Apple",
-      role: "user",
       email: "apple@test.com",
-      createdAt: "2023-01-15",
+      googleId: "google-apple-789",
+      role: "user",
+      favoriteSites: [],
+      createdAt: "2023-01-15T00:00:00Z",
+      updatedAt: "2023-01-15T00:00:00Z",
     },
   ];
 
@@ -126,13 +142,7 @@ describe("UsersManagementPage", () => {
       </MemoryRouter>,
     );
 
-    // 1. Find the text “Apple”.
     const appleText = screen.getByText("Apple");
-
-    // 2. Find the ‘real’ card container that even contains the button.
-    // Due to the component structure, the order is h2 -> div -> div (whole card).
-    // To find the closest "parent containing button" in text
-    // If data-testid is not used, the parent of the parent is searched as follows.
     const appleCard = appleText.closest(
       ".bg-white.rounded-lg.shadow-md",
     ) as HTMLElement;

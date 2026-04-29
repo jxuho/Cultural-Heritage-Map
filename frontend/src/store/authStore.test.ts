@@ -16,8 +16,6 @@ vi.mock('axios', () => {
 const mockedApi = vi.mocked(axios.create());
 
 describe('authStore', () => {
-
-
   const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
   // Initialize store state before each test
